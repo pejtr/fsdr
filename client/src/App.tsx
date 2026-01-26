@@ -5,31 +5,51 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Browse from "./pages/Browse";
+import VideoPage from "./pages/VideoPage";
+import CreatorProfile from "./pages/CreatorProfile";
+import CreatorDashboard from "./pages/CreatorDashboard";
+import SubscriberDashboard from "./pages/SubscriberDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import AgeVerification from "./pages/AgeVerification";
+import Settings from "./pages/Settings";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
+  const { user, isAuthenticated } = useAuth();
+  
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/" component={Home} />
+      <Route path="/browse" component={Browse} />
+      <Route path="/video/:id" component={VideoPage} />
+      <Route path="/creator/:id" component={CreatorProfile} />
+      <Route path="/verify-age" component={AgeVerification} />
+      
+      {/* Protected routes */}
+      {isAuthenticated && (
+        <>
+          <Route path="/dashboard" component={CreatorDashboard} />
+          <Route path="/subscriptions" component={SubscriberDashboard} />
+          <Route path="/settings" component={Settings} />
+        </>
+      )}
+      
+      {/* Admin routes */}
+      {user?.role === 'admin' && (
+        <Route path="/admin" component={AdminDashboard} />
+      )}
+      
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
           <Router />

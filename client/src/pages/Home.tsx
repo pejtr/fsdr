@@ -1,31 +1,151 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+import { Play, Users, DollarSign, Shield, Sparkles, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
+import Header from "@/components/Header";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
-
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl" />
+        
+        <div className="container relative py-24 md:py-32">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6">
+              <span className="femsider-text-gradient">FEMSIDER</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Prémiová platforma pro tvůrce exkluzivního obsahu. 
+              Monetizuj svou kreativitu a buduj komunitu fanoušků.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {isAuthenticated ? (
+                <>
+                  <Link href="/browse">
+                    <Button size="lg" className="femsider-gradient text-white border-0 femsider-glow">
+                      <Play className="mr-2 h-5 w-5" />
+                      Procházet obsah
+                    </Button>
+                  </Link>
+                  {user?.role === 'creator' && (
+                    <Link href="/dashboard">
+                      <Button size="lg" variant="outline">
+                        Můj dashboard
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              ) : (
+                <>
+                  <a href={getLoginUrl()}>
+                    <Button size="lg" className="femsider-gradient text-white border-0 femsider-glow">
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Začít zdarma
+                    </Button>
+                  </a>
+                  <Link href="/browse">
+                    <Button size="lg" variant="outline">
+                      Procházet obsah
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 border-t border-border">
+        <div className="container">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            Proč <span className="femsider-text-gradient">FEMSIDER</span>?
+          </h2>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <FeatureCard
+              icon={<DollarSign className="h-8 w-8" />}
+              title="90% pro tvůrce"
+              description="Nejnižší provize na trhu. Tvé peníze zůstávají tobě."
+            />
+            <FeatureCard
+              icon={<Users className="h-8 w-8" />}
+              title="Affiliate program"
+              description="Získej 25-30% doživotní provizi za každého přivedeného uživatele."
+            />
+            <FeatureCard
+              icon={<Shield className="h-8 w-8" />}
+              title="Bezpečnost"
+              description="Ověření věku a bezpečné platby přes CCBill/Segpay."
+            />
+            <FeatureCard
+              icon={<Play className="h-8 w-8" />}
+              title="HD Streaming"
+              description="Kvalitní přehrávání videí ve vysokém rozlišení."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 border-t border-border">
+        <div className="container">
+          <div className="femsider-card p-8 md:p-12 text-center femsider-glow">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Připraven začít vydělávat?
+            </h2>
+            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+              Připoj se k tisícům tvůrců, kteří již monetizují svůj obsah na FEMSIDER.
+            </p>
+            {!isAuthenticated && (
+              <a href={getLoginUrl()}>
+                <Button size="lg" className="femsider-gradient text-white border-0">
+                  Vytvořit účet zdarma
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 border-t border-border">
+        <div className="container">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="femsider-text-gradient font-bold text-xl">FEMSIDER</div>
+            <div className="text-sm text-muted-foreground">
+              © 2026 FEMSIDER. Všechna práva vyhrazena.
+            </div>
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <a href="#" className="hover:text-foreground transition-colors">Podmínky</a>
+              <a href="#" className="hover:text-foreground transition-colors">Soukromí</a>
+              <a href="#" className="hover:text-foreground transition-colors">Kontakt</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return (
+    <div className="femsider-card p-6 transition-all hover:femsider-glow">
+      <div className="text-primary mb-4">{icon}</div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm">{description}</p>
     </div>
   );
 }
