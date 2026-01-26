@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
@@ -22,6 +22,7 @@ export default function Header() {
     { href: "/browse", label: "Procházet" },
     ...(isAuthenticated && user?.role === 'creator' ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(isAuthenticated ? [{ href: "/subscriptions", label: "Odběry" }] : []),
+    ...(isAuthenticated ? [{ href: "/affiliate", label: "Affiliate" }] : []),
     ...(user?.role === 'admin' ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 
@@ -97,6 +98,12 @@ export default function Header() {
                       </DropdownMenuItem>
                     </Link>
                   )}
+                  <Link href="/affiliate">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Users className="mr-2 h-4 w-4" />
+                      Affiliate program
+                    </DropdownMenuItem>
+                  </Link>
                   <Link href="/settings">
                     <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />

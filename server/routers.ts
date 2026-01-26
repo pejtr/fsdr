@@ -341,6 +341,36 @@ export const appRouter = router({
         
         return { success: true };
       }),
+    
+    // Leaderboard
+    getLeaderboard: publicProcedure
+      .input(z.object({ limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        return db.getAffiliateLeaderboard(input.limit);
+      }),
+    
+    getMyPosition: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserLeaderboardPosition(ctx.user.id);
+    }),
+    
+    // Direct referrals with stats
+    getDirectReferrals: protectedProcedure.query(async ({ ctx }) => {
+      return db.getDirectReferrals(ctx.user.id);
+    }),
+    
+    // Badges
+    getAllBadges: publicProcedure.query(async () => {
+      return db.getAllBadges();
+    }),
+    
+    getMyBadges: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserBadges(ctx.user.id);
+    }),
+    
+    checkBadges: protectedProcedure.mutation(async ({ ctx }) => {
+      const newBadges = await db.checkAndAwardBadges(ctx.user.id);
+      return { newBadges };
+    }),
   }),
 
   // Age verification

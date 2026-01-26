@@ -539,3 +539,214 @@ export async function getCreatorStats(creatorId: number) {
     totalEarnings: earnings,
   };
 }
+
+
+// ============ BADGE FUNCTIONS ============
+
+import { affiliateBadges, userBadges, InsertAffiliateBadge, InsertUserBadge } from "../drizzle/schema";
+
+// Default badges to seed
+export const DEFAULT_BADGES: InsertAffiliateBadge[] = [
+  // Referral count badges
+  { code: "first_referral", name: "První krok", description: "Přiveď svého prvního uživatele", icon: "UserPlus", color: "text-emerald-500", tier: "bronze", requirement: "referrals", threshold: 1 },
+  { code: "referral_5", name: "Networker", description: "Přiveď 5 uživatelů", icon: "Users", color: "text-blue-500", tier: "silver", requirement: "referrals", threshold: 5 },
+  { code: "referral_25", name: "Influencer", description: "Přiveď 25 uživatelů", icon: "Star", color: "text-yellow-500", tier: "gold", requirement: "referrals", threshold: 25 },
+  { code: "referral_100", name: "Ambasador", description: "Přiveď 100 uživatelů", icon: "Crown", color: "text-purple-500", tier: "platinum", requirement: "referrals", threshold: 100 },
+  { code: "referral_500", name: "Legenda", description: "Přiveď 500 uživatelů", icon: "Gem", color: "text-pink-500", tier: "diamond", requirement: "referrals", threshold: 500 },
+  
+  // Earnings badges
+  { code: "earnings_100", name: "První stovka", description: "Vydělej $100 na provizích", icon: "DollarSign", color: "text-emerald-500", tier: "bronze", requirement: "earnings", threshold: 100 },
+  { code: "earnings_500", name: "Půl tisíce", description: "Vydělej $500 na provizích", icon: "Banknote", color: "text-blue-500", tier: "silver", requirement: "earnings", threshold: 500 },
+  { code: "earnings_1000", name: "Tisícovka", description: "Vydělej $1,000 na provizích", icon: "Wallet", color: "text-yellow-500", tier: "gold", requirement: "earnings", threshold: 1000 },
+  { code: "earnings_5000", name: "High Roller", description: "Vydělej $5,000 na provizích", icon: "TrendingUp", color: "text-purple-500", tier: "platinum", requirement: "earnings", threshold: 5000 },
+  { code: "earnings_10000", name: "Magnát", description: "Vydělej $10,000 na provizích", icon: "Trophy", color: "text-pink-500", tier: "diamond", requirement: "earnings", threshold: 10000 },
+  
+  // Network size badges (total network including all tiers)
+  { code: "network_10", name: "Malá síť", description: "Vybuduj síť 10 uživatelů", icon: "Network", color: "text-emerald-500", tier: "bronze", requirement: "network_size", threshold: 10 },
+  { code: "network_50", name: "Rostoucí síť", description: "Vybuduj síť 50 uživatelů", icon: "GitBranch", color: "text-blue-500", tier: "silver", requirement: "network_size", threshold: 50 },
+  { code: "network_200", name: "Velká síť", description: "Vybuduj síť 200 uživatelů", icon: "Share2", color: "text-yellow-500", tier: "gold", requirement: "network_size", threshold: 200 },
+  { code: "network_1000", name: "Impérium", description: "Vybuduj síť 1,000 uživatelů", icon: "Globe", color: "text-purple-500", tier: "platinum", requirement: "network_size", threshold: 1000 },
+];
+
+export async function seedBadges() {
+  const db = await getDb();
+  if (!db) return;
+  
+  for (const badge of DEFAULT_BADGES) {
+    try {
+      await db.insert(affiliateBadges).values(badge).onDuplicateKeyUpdate({ set: { name: badge.name } });
+    } catch (e) {
+      // Ignore duplicate errors
+    }
+  }
+}
+
+export async function getAllBadges() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(affiliateBadges).orderBy(affiliateBadges.threshold);
+}
+
+export async function getUserBadges(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: userBadges.id,
+    earnedAt: userBadges.earnedAt,
+    badge: affiliateBadges,
+  })
+    .from(userBadges)
+    .innerJoin(affiliateBadges, eq(userBadges.badgeId, affiliateBadges.id))
+    .where(eq(userBadges.userId, userId))
+    .orderBy(desc(userBadges.earnedAt));
+}
+
+export async function awardBadge(userId: number, badgeId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Check if user already has this badge
+  const existing = await db.select().from(userBadges)
+    .where(and(eq(userBadges.userId, userId), eq(userBadges.badgeId, badgeId)))
+    .limit(1);
+  
+  if (existing.length > 0) return null;
+  
+  const result = await db.insert(userBadges).values({ userId, badgeId });
+  return result[0].insertId;
+}
+
+export async function checkAndAwardBadges(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const newBadges: Array<{ code: string; name: string }> = [];
+  
+  // Get user's current stats
+  const networkStats = await getReferralNetworkStats(userId);
+  const totalEarnings = parseFloat(await getAffiliateTotalEarnings(userId));
+  const directReferrals = networkStats.tier1;
+  const totalNetwork = networkStats.total;
+  
+  // Get all badges
+  const allBadges = await getAllBadges();
+  
+  // Get user's current badges
+  const currentBadges = await getUserBadges(userId);
+  const currentBadgeIds = new Set(currentBadges.map(b => b.badge.id));
+  
+  for (const badge of allBadges) {
+    if (currentBadgeIds.has(badge.id)) continue;
+    
+    let qualifies = false;
+    
+    switch (badge.requirement) {
+      case "referrals":
+        qualifies = directReferrals >= badge.threshold;
+        break;
+      case "earnings":
+        qualifies = totalEarnings >= badge.threshold;
+        break;
+      case "network_size":
+        qualifies = totalNetwork >= badge.threshold;
+        break;
+    }
+    
+    if (qualifies) {
+      await awardBadge(userId, badge.id);
+      newBadges.push({ code: badge.code, name: badge.name });
+    }
+  }
+  
+  return newBadges;
+}
+
+// ============ LEADERBOARD FUNCTIONS ============
+
+export async function getAffiliateLeaderboard(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select({
+    userId: affiliateEarnings.affiliateId,
+    totalEarnings: sql<string>`COALESCE(SUM(${affiliateEarnings.amount}), 0)`,
+    referralCount: sql<number>`COUNT(DISTINCT ${affiliateEarnings.referredUserId})`,
+  })
+    .from(affiliateEarnings)
+    .where(eq(affiliateEarnings.status, "approved"))
+    .groupBy(affiliateEarnings.affiliateId)
+    .orderBy(desc(sql`SUM(${affiliateEarnings.amount})`))
+    .limit(limit);
+  
+  // Enrich with user data
+  const enriched = await Promise.all(result.map(async (entry, index) => {
+    const user = await getUserById(entry.userId);
+    return {
+      rank: index + 1,
+      userId: entry.userId,
+      name: user?.name || `Uživatel #${entry.userId}`,
+      avatarUrl: user?.avatarUrl,
+      totalEarnings: entry.totalEarnings,
+      referralCount: entry.referralCount,
+    };
+  }));
+  
+  return enriched;
+}
+
+export async function getUserLeaderboardPosition(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const leaderboard = await getAffiliateLeaderboard(1000);
+  const position = leaderboard.findIndex(entry => entry.userId === userId);
+  
+  if (position === -1) return null;
+  
+  const entry = leaderboard[position];
+  return {
+    ...entry,
+    rank: position + 1,
+  };
+}
+
+// Get direct referrals with their stats
+export async function getDirectReferrals(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const referrals = await db.select({
+    id: users.id,
+    name: users.name,
+    avatarUrl: users.avatarUrl,
+    createdAt: users.createdAt,
+  })
+    .from(users)
+    .where(eq(users.referredBy, userId))
+    .orderBy(desc(users.createdAt));
+  
+  // Enrich with earnings from this referral
+  const enriched = await Promise.all(referrals.map(async (referral) => {
+    const earnings = await db.select({
+      total: sql<string>`COALESCE(SUM(${affiliateEarnings.amount}), 0)`,
+    })
+      .from(affiliateEarnings)
+      .where(and(
+        eq(affiliateEarnings.affiliateId, userId),
+        eq(affiliateEarnings.referredUserId, referral.id)
+      ));
+    
+    // Get their network size (how many they referred)
+    const theirReferrals = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(eq(users.referredBy, referral.id));
+    
+    return {
+      ...referral,
+      earningsFromReferral: earnings[0]?.total ?? "0",
+      theirReferralCount: theirReferrals[0]?.count ?? 0,
+    };
+  }));
+  
+  return enriched;
+}

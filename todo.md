@@ -36,3 +36,11 @@
 - [x] Změnit 90% na 88% pro tvůrce
 - [x] Změnit "Nejnižší" na "Nejvyšší" a zvýraznit
 - [x] Implementovat víceúrovňový (multi-tier) affiliate systém (4 úrovně)
+
+## Affiliate Dashboard & Gamifikace
+- [x] Dashboard pro affiliate síť - vizualizace sítě doporučení a výdělků
+- [x] Žebříček nejúspěšnějších tvůrců (leaderboard)
+- [x] Systém odznaků a ocenění pro affiliate partnery
+- [x] Databázové schéma pro odznaky
+- [x] Backend API pro leaderboard a odznaky
+- [x] Frontend komponenty pro affiliate dashboard

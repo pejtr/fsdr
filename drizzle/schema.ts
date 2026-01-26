@@ -137,3 +137,32 @@ export const moderationFlags = mysqlTable("moderationFlags", {
 
 export type ModerationFlag = typeof moderationFlags.$inferSelect;
 export type InsertModerationFlag = typeof moderationFlags.$inferInsert;
+
+
+// Affiliate badges/achievements
+export const affiliateBadges = mysqlTable("affiliateBadges", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  name: varchar("name", { length: 64 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 32 }), // lucide icon name
+  color: varchar("color", { length: 32 }), // tailwind color class
+  tier: mysqlEnum("tier", ["bronze", "silver", "gold", "platinum", "diamond"]).default("bronze"),
+  requirement: mysqlEnum("requirement", ["referrals", "earnings", "network_size", "streak", "special"]).notNull(),
+  threshold: int("threshold").notNull(), // e.g., 10 referrals, $1000 earnings
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AffiliateBadge = typeof affiliateBadges.$inferSelect;
+export type InsertAffiliateBadge = typeof affiliateBadges.$inferInsert;
+
+// User badges (earned badges)
+export const userBadges = mysqlTable("userBadges", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  badgeId: int("badgeId").notNull(),
+  earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+});
+
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = typeof userBadges.$inferInsert;

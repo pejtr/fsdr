@@ -15,6 +15,13 @@
       "when": 1769465077119,
       "tag": "0001_past_blackheart",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1769470066484,
+      "tag": "0002_stiff_warhawk",
+      "breakpoints": true
     }
   ]
 }
