@@ -31,3 +31,8 @@
 - [x] Affiliate tracking table
 - [x] Earnings/transactions table
 - [x] Age verification records table
+
+## Updates
+- [x] Změnit 90% na 88% pro tvůrce
+- [x] Změnit "Nejnižší" na "Nejvyšší" a zvýraznit
+- [x] Implementovat víceúrovňový (multi-tier) affiliate systém (4 úrovně)

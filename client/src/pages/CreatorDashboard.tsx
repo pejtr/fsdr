@@ -88,7 +88,7 @@ export default function CreatorDashboard() {
             <h1 className="text-3xl font-bold mb-4">Staň se tvůrcem</h1>
             <p className="text-muted-foreground mb-8">
               Začni vydělávat sdílením svého obsahu s fanoušky. 
-              Získej 90% z každého předplatného!
+              Získej 88% z každého předplatného!
             </p>
             
             {!user?.isAgeVerified ? (

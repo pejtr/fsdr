@@ -76,8 +76,8 @@ export default function Home() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <FeatureCard
               icon={<DollarSign className="h-8 w-8" />}
-              title="90% pro tvůrce"
-              description="Nejnižší provize na trhu. Tvé peníze zůstávají tobě."
+              title="88% pro tvůrce"
+              description={<><span className="text-primary font-bold">Nejvyšší</span> podíl na trhu. Tvé peníze zůstávají tobě.</>}
             />
             <FeatureCard
               icon={<Users className="h-8 w-8" />}
@@ -140,7 +140,7 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: React.ReactNode }) {
   return (
     <div className="femsider-card p-6 transition-all hover:femsider-glow">
       <div className="text-primary mb-4">{icon}</div>

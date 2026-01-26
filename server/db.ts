@@ -225,6 +225,16 @@ export async function cancelSubscription(subscriptionId: number) {
 
 // ============ AFFILIATE FUNCTIONS ============
 
+// Multi-tier affiliate commission rates
+export const AFFILIATE_TIERS = {
+  1: 0.25,  // 25% for direct referrals
+  2: 0.10,  // 10% for tier 2
+  3: 0.05,  // 5% for tier 3
+  4: 0.02,  // 2% for tier 4
+};
+
+export const MAX_AFFILIATE_TIER = 4;
+
 export async function createAffiliateEarning(earning: InsertAffiliateEarning) {
   const db = await getDb();
   if (!db) return null;
@@ -247,6 +257,146 @@ export async function getAffiliateTotalEarnings(affiliateId: number) {
     .from(affiliateEarnings)
     .where(and(eq(affiliateEarnings.affiliateId, affiliateId), eq(affiliateEarnings.status, "approved")));
   return result[0]?.total ?? "0";
+}
+
+// Get affiliate earnings by tier
+export async function getAffiliateEarningsByTier(affiliateId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    tier: affiliateEarnings.tier,
+    total: sql<string>`COALESCE(SUM(${affiliateEarnings.amount}), 0)`,
+    count: sql<number>`COUNT(*)`
+  })
+    .from(affiliateEarnings)
+    .where(eq(affiliateEarnings.affiliateId, affiliateId))
+    .groupBy(affiliateEarnings.tier);
+  return result;
+}
+
+// Get the full referral chain for a user (up to MAX_AFFILIATE_TIER levels)
+export async function getReferralChain(userId: number): Promise<Array<{ userId: number; tier: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const chain: Array<{ userId: number; tier: number }> = [];
+  let currentUserId = userId;
+  let tier = 1;
+  
+  while (tier <= MAX_AFFILIATE_TIER) {
+    const user = await db.select({ referredBy: users.referredBy })
+      .from(users)
+      .where(eq(users.id, currentUserId))
+      .limit(1);
+    
+    if (!user[0]?.referredBy) break;
+    
+    chain.push({ userId: user[0].referredBy, tier });
+    currentUserId = user[0].referredBy;
+    tier++;
+  }
+  
+  return chain;
+}
+
+// Process multi-tier affiliate commissions for a subscription payment
+export async function processMultiTierAffiliateCommissions(
+  subscriberId: number,
+  subscriptionId: number,
+  paymentAmount: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Get the referral chain
+  const referralChain = await getReferralChain(subscriberId);
+  
+  for (const { userId: affiliateId, tier } of referralChain) {
+    const commissionRate = AFFILIATE_TIERS[tier as keyof typeof AFFILIATE_TIERS];
+    if (!commissionRate) continue;
+    
+    const commissionAmount = paymentAmount * commissionRate;
+    
+    // Create affiliate earning record
+    await createAffiliateEarning({
+      affiliateId,
+      referredUserId: subscriberId,
+      subscriptionId,
+      amount: commissionAmount.toFixed(2),
+      commissionRate: (commissionRate * 100).toFixed(2),
+      tier,
+      status: "pending",
+    });
+    
+    // Create transaction record for the affiliate
+    await createTransaction({
+      userId: affiliateId,
+      type: "affiliate_commission",
+      amount: commissionAmount.toFixed(2),
+      status: "pending",
+      description: `Tier ${tier} affiliate commission (${(commissionRate * 100).toFixed(0)}%) from subscription #${subscriptionId}`,
+      relatedSubscriptionId: subscriptionId,
+    });
+  }
+}
+
+// Get referral network stats (how many users at each tier)
+export async function getReferralNetworkStats(userId: number) {
+  const db = await getDb();
+  if (!db) return { tier1: 0, tier2: 0, tier3: 0, tier4: 0, total: 0 };
+  
+  // Tier 1: Direct referrals
+  const tier1 = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(users)
+    .where(eq(users.referredBy, userId));
+  
+  // Get tier 1 user IDs for tier 2 lookup
+  const tier1Users = await db.select({ id: users.id })
+    .from(users)
+    .where(eq(users.referredBy, userId));
+  const tier1Ids = tier1Users.map(u => u.id);
+  
+  let tier2Count = 0;
+  let tier3Count = 0;
+  let tier4Count = 0;
+  let tier2Ids: number[] = [];
+  let tier3Ids: number[] = [];
+  
+  if (tier1Ids.length > 0) {
+    // Tier 2: Referrals of tier 1
+    const tier2Users = await db.select({ id: users.id })
+      .from(users)
+      .where(sql`${users.referredBy} IN (${tier1Ids.join(',')})`);
+    tier2Count = tier2Users.length;
+    tier2Ids = tier2Users.map(u => u.id);
+    
+    if (tier2Ids.length > 0) {
+      // Tier 3: Referrals of tier 2
+      const tier3Users = await db.select({ id: users.id })
+        .from(users)
+        .where(sql`${users.referredBy} IN (${tier2Ids.join(',')})`);
+      tier3Count = tier3Users.length;
+      tier3Ids = tier3Users.map(u => u.id);
+      
+      if (tier3Ids.length > 0) {
+        // Tier 4: Referrals of tier 3
+        const tier4Users = await db.select({ count: sql<number>`COUNT(*)` })
+          .from(users)
+          .where(sql`${users.referredBy} IN (${tier3Ids.join(',')})`);
+        tier4Count = tier4Users[0]?.count ?? 0;
+      }
+    }
+  }
+  
+  const tier1Count = tier1[0]?.count ?? 0;
+  
+  return {
+    tier1: tier1Count,
+    tier2: tier2Count,
+    tier3: tier3Count,
+    tier4: tier4Count,
+    total: tier1Count + tier2Count + tier3Count + tier4Count,
+  };
 }
 
 // ============ TRANSACTION FUNCTIONS ============

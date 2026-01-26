@@ -189,9 +189,9 @@ export default function Settings() {
                     <div className="femsider-card p-4">
                       <h4 className="font-medium mb-2">Váš výdělek</h4>
                       <p className="text-sm text-muted-foreground">
-                        Z každého předplatného získáte <span className="text-primary font-bold">90%</span>.
+                        Z každého předplatného získáte <span className="text-primary font-bold">88%</span>.
                         Při ceně ${subscriptionPrice} to je <span className="text-primary font-bold">
-                          ${(parseFloat(subscriptionPrice || '0') * 0.9).toFixed(2)}
+                          ${(parseFloat(subscriptionPrice || '0') * 0.88).toFixed(2)}
                         </span> za odběratele měsíčně.
                       </p>
                     </div>

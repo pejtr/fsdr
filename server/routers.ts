@@ -254,23 +254,9 @@ export const appRouter = router({
           description: `Subscription from user ${ctx.user.id}`,
         });
         
-        // Handle affiliate commission if user was referred
-        const subscriber = await db.getUserById(ctx.user.id);
-        if (subscriber?.referredBy) {
-          const commissionRate = "25.00"; // 25%
-          const price = parseFloat(creator.subscriptionPrice || "9.99");
-          const commission = (price * 0.25).toFixed(2);
-          
-          await db.createAffiliateEarning({
-            affiliateId: subscriber.referredBy,
-            referredUserId: ctx.user.id,
-            subscriptionId: subscriptionId,
-            amount: commission,
-            commissionRate: commissionRate,
-            tier: 1,
-            status: 'approved',
-          });
-        }
+        // Handle multi-tier affiliate commissions
+        const price = parseFloat(creator.subscriptionPrice || "9.99");
+        await db.processMultiTierAffiliateCommissions(ctx.user.id, subscriptionId!, price);
         
         return { subscriptionId };
       }),
@@ -307,18 +293,31 @@ export const appRouter = router({
       }),
   }),
 
-  // Affiliate program
+  // Affiliate program (Multi-tier MLM system)
   affiliate: router({
     getStats: protectedProcedure.query(async ({ ctx }) => {
       const earnings = await db.getAffiliateEarnings(ctx.user.id);
       const total = await db.getAffiliateTotalEarnings(ctx.user.id);
+      const earningsByTier = await db.getAffiliateEarningsByTier(ctx.user.id);
+      const networkStats = await db.getReferralNetworkStats(ctx.user.id);
       const user = await db.getUserById(ctx.user.id);
       return {
         affiliateCode: user?.affiliateCode,
         totalEarnings: total,
         recentEarnings: earnings.slice(0, 10),
         referralCount: earnings.length,
+        earningsByTier,
+        networkStats,
+        tiers: db.AFFILIATE_TIERS,
       };
+    }),
+    
+    getNetworkStats: protectedProcedure.query(async ({ ctx }) => {
+      return db.getReferralNetworkStats(ctx.user.id);
+    }),
+    
+    getEarningsByTier: protectedProcedure.query(async ({ ctx }) => {
+      return db.getAffiliateEarningsByTier(ctx.user.id);
     }),
     
     registerReferral: publicProcedure
