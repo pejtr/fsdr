@@ -44,3 +44,9 @@
 - [x] Databázové schéma pro odznaky
 - [x] Backend API pro leaderboard a odznaky
 - [x] Frontend komponenty pro affiliate dashboard
+
+## Affiliate Marketing Tools
+- [x] Sdílecí tlačítka pro sociální sítě (Twitter, Facebook, Telegram, WhatsApp)
+- [x] Sekce s propagačními materiály (bannery, texty)
+- [x] E-mailové notifikace při získání provize
+- [x] E-mailové notifikace při získání odznaku

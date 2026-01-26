@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { storagePut } from "./storage";
+import { notifyNewCommission, notifyNewBadge, notifyNewSubscriber } from "./notifications";
 import { nanoid } from "nanoid";
 
 // Admin procedure - only for admin users
@@ -256,7 +257,21 @@ export const appRouter = router({
         
         // Handle multi-tier affiliate commissions
         const price = parseFloat(creator.subscriptionPrice || "9.99");
-        await db.processMultiTierAffiliateCommissions(ctx.user.id, subscriptionId!, price);
+        const commissions = await db.processMultiTierAffiliateCommissions(ctx.user.id, subscriptionId!, price);
+        
+        // Send notifications
+        await notifyNewSubscriber(input.creatorId, ctx.user.id, creator.subscriptionPrice || "9.99");
+        
+        // Notify affiliates about their commissions
+        for (const commission of commissions) {
+          await notifyNewCommission(
+            commission.affiliateId,
+            commission.amount,
+            commission.tier,
+            commission.commissionRate,
+            ctx.user.id
+          );
+        }
         
         return { subscriptionId };
       }),
@@ -369,6 +384,17 @@ export const appRouter = router({
     
     checkBadges: protectedProcedure.mutation(async ({ ctx }) => {
       const newBadges = await db.checkAndAwardBadges(ctx.user.id);
+      
+      // Send notifications for new badges
+      for (const badge of newBadges) {
+        await notifyNewBadge(
+          ctx.user.id,
+          badge.name,
+          badge.tier,
+          badge.description
+        );
+      }
+      
       return { newBadges };
     }),
   }),

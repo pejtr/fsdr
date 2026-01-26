@@ -299,14 +299,24 @@ export async function getReferralChain(userId: number): Promise<Array<{ userId: 
   return chain;
 }
 
+// Commission result type for notifications
+export interface CommissionResult {
+  affiliateId: number;
+  amount: string;
+  tier: number;
+  commissionRate: string;
+}
+
 // Process multi-tier affiliate commissions for a subscription payment
 export async function processMultiTierAffiliateCommissions(
   subscriberId: number,
   subscriptionId: number,
   paymentAmount: number
-): Promise<void> {
+): Promise<CommissionResult[]> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return [];
+  
+  const results: CommissionResult[] = [];
   
   // Get the referral chain
   const referralChain = await getReferralChain(subscriberId);
@@ -337,7 +347,17 @@ export async function processMultiTierAffiliateCommissions(
       description: `Tier ${tier} affiliate commission (${(commissionRate * 100).toFixed(0)}%) from subscription #${subscriptionId}`,
       relatedSubscriptionId: subscriptionId,
     });
+    
+    // Add to results for notifications
+    results.push({
+      affiliateId,
+      amount: commissionAmount.toFixed(2),
+      tier,
+      commissionRate: (commissionRate * 100).toFixed(2),
+    });
   }
+  
+  return results;
 }
 
 // Get referral network stats (how many users at each tier)
@@ -620,7 +640,7 @@ export async function checkAndAwardBadges(userId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  const newBadges: Array<{ code: string; name: string }> = [];
+  const newBadges: Array<{ code: string; name: string; tier: string; description: string }> = [];
   
   // Get user's current stats
   const networkStats = await getReferralNetworkStats(userId);
@@ -654,7 +674,12 @@ export async function checkAndAwardBadges(userId: number) {
     
     if (qualifies) {
       await awardBadge(userId, badge.id);
-      newBadges.push({ code: badge.code, name: badge.name });
+      newBadges.push({ 
+        code: badge.code, 
+        name: badge.name,
+        tier: badge.tier || 'bronze',
+        description: badge.description || '',
+      });
     }
   }
   

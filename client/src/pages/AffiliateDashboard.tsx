@@ -20,7 +20,12 @@ import {
   UserPlus,
   TrendingUp,
   Award,
-  GitBranch
+  GitBranch,
+  Share2,
+  Download,
+  Image,
+  FileText,
+  MessageSquare
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
@@ -191,6 +196,29 @@ export default function AffiliateDashboard() {
                 Kopírovat
               </Button>
             </div>
+            
+            {/* Social Share Buttons */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-3">Sdílej na sociálních sítích:</p>
+              <div className="flex flex-wrap gap-2">
+                <SocialShareButton 
+                  platform="twitter" 
+                  affiliateCode={stats?.affiliateCode || ''} 
+                />
+                <SocialShareButton 
+                  platform="facebook" 
+                  affiliateCode={stats?.affiliateCode || ''} 
+                />
+                <SocialShareButton 
+                  platform="telegram" 
+                  affiliateCode={stats?.affiliateCode || ''} 
+                />
+                <SocialShareButton 
+                  platform="whatsapp" 
+                  affiliateCode={stats?.affiliateCode || ''} 
+                />
+              </div>
+            </div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div className="femsider-card p-3">
                 <p className="text-2xl font-bold text-primary">{(stats?.tiers?.[1] ?? 0.25) * 100}%</p>
@@ -230,6 +258,10 @@ export default function AffiliateDashboard() {
             <TabsTrigger value="earnings">
               <DollarSign className="h-4 w-4 mr-2" />
               Výdělky
+            </TabsTrigger>
+            <TabsTrigger value="promo">
+              <Image className="h-4 w-4 mr-2" />
+              Promo materiály
             </TabsTrigger>
           </TabsList>
           
@@ -484,8 +516,197 @@ export default function AffiliateDashboard() {
               </Card>
             </div>
           </TabsContent>
+          
+          {/* Promo Materials Tab */}
+          <TabsContent value="promo">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Banners */}
+              <Card className="femsider-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Image className="h-5 w-5 text-primary" />
+                    Bannery
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <PromoBanner 
+                      size="728x90" 
+                      name="Leaderboard" 
+                      affiliateCode={stats?.affiliateCode || ''}
+                    />
+                    <PromoBanner 
+                      size="300x250" 
+                      name="Medium Rectangle" 
+                      affiliateCode={stats?.affiliateCode || ''}
+                    />
+                    <PromoBanner 
+                      size="160x600" 
+                      name="Wide Skyscraper" 
+                      affiliateCode={stats?.affiliateCode || ''}
+                    />
+                    <PromoBanner 
+                      size="320x50" 
+                      name="Mobile Banner" 
+                      affiliateCode={stats?.affiliateCode || ''}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Text Templates */}
+              <Card className="femsider-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Textové šablony
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <PromoText 
+                      title="Krátký tweet" 
+                      text={`🔥 Objevte FEMSIDER - prémiovou platformu pro exkluzivní obsah! Registrujte se přes můj odkaz a získejte speciální bonus! ${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${stats?.affiliateCode || ''}`}
+                    />
+                    <PromoText 
+                      title="Instagram bio" 
+                      text={`💎 FEMSIDER Partner | Exkluzivní obsah od nejlepších tvůrců | 88% pro tvůrce | Registrace: ${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${stats?.affiliateCode || ''}`}
+                    />
+                    <PromoText 
+                      title="E-mail pozvánka" 
+                      text={`Ahoj!\n\nChci ti představit FEMSIDER - novou platformu pro tvůrce exkluzivního obsahu. Tvůrci zde dostávají 88% z každé platby - nejvyšší podíl na trhu!\n\nRegistruj se přes můj odkaz: ${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${stats?.affiliateCode || ''}\n\nTěším se na tebe!`}
+                    />
+                    <PromoText 
+                      title="YouTube popisek" 
+                      text={`🔗 FEMSIDER - Prémiová platforma pro tvůrce\n✅ 88% výdělků pro tvůrce\n✅ Víceúrovňový affiliate program\n✅ Bezpečné platby\n\n👉 Registrace: ${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${stats?.affiliateCode || ''}`}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Stats */}
+            <Card className="femsider-card mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Klíčové prodejní argumenty
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
+                    <p className="text-2xl font-bold text-primary">88%</p>
+                    <p className="text-sm text-muted-foreground">Výdělk pro tvůrce - nejvyšší na trhu</p>
+                  </div>
+                  <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                    <p className="text-2xl font-bold text-blue-400">4 úrovně</p>
+                    <p className="text-sm text-muted-foreground">Víceúrovňový affiliate program</p>
+                  </div>
+                  <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                    <p className="text-2xl font-bold text-purple-400">25%</p>
+                    <p className="text-sm text-muted-foreground">Doživotní provize z přímých referralů</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
+    </div>
+  );
+}
+
+// Social Share Button Component
+function SocialShareButton({ platform, affiliateCode }: { platform: string; affiliateCode: string }) {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const affiliateLink = `${baseUrl}?ref=${affiliateCode}`;
+  const text = encodeURIComponent('Objevte FEMSIDER - prémiovou platformu pro exkluzivní obsah! 🔥');
+  
+  const shareUrls: Record<string, string> = {
+    twitter: `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(affiliateLink)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(affiliateLink)}`,
+    telegram: `https://t.me/share/url?url=${encodeURIComponent(affiliateLink)}&text=${text}`,
+    whatsapp: `https://wa.me/?text=${text}%20${encodeURIComponent(affiliateLink)}`,
+  };
+  
+  const platformNames: Record<string, string> = {
+    twitter: 'Twitter/X',
+    facebook: 'Facebook',
+    telegram: 'Telegram',
+    whatsapp: 'WhatsApp',
+  };
+  
+  const platformColors: Record<string, string> = {
+    twitter: 'bg-black hover:bg-gray-800',
+    facebook: 'bg-blue-600 hover:bg-blue-700',
+    telegram: 'bg-sky-500 hover:bg-sky-600',
+    whatsapp: 'bg-green-500 hover:bg-green-600',
+  };
+  
+  const handleShare = () => {
+    window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+    toast.success(`Sdílení na ${platformNames[platform]}`);
+  };
+  
+  return (
+    <Button 
+      onClick={handleShare}
+      className={`${platformColors[platform]} text-white border-0`}
+      size="sm"
+    >
+      <Share2 className="h-4 w-4 mr-2" />
+      {platformNames[platform]}
+    </Button>
+  );
+}
+
+// Promo Banner Component
+function PromoBanner({ size, name, affiliateCode }: { size: string; name: string; affiliateCode: string }) {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const bannerCode = `<a href="${baseUrl}?ref=${affiliateCode}" target="_blank"><img src="${baseUrl}/banners/${size}.png" alt="FEMSIDER" width="${size.split('x')[0]}" height="${size.split('x')[1]}" /></a>`;
+  
+  const copyCode = () => {
+    navigator.clipboard.writeText(bannerCode);
+    toast.success(`Kód banneru ${name} zkopírován!`);
+  };
+  
+  return (
+    <div className="p-4 bg-secondary/30 rounded-lg">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className="font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">{size} px</p>
+        </div>
+        <Button onClick={copyCode} size="sm" variant="outline">
+          <Copy className="h-4 w-4 mr-2" />
+          Kopírovat kód
+        </Button>
+      </div>
+      <div className="mt-2 p-2 bg-background rounded text-xs font-mono text-muted-foreground overflow-x-auto">
+        {bannerCode}
+      </div>
+    </div>
+  );
+}
+
+// Promo Text Component
+function PromoText({ title, text }: { title: string; text: string }) {
+  const copyText = () => {
+    navigator.clipboard.writeText(text);
+    toast.success(`Text "${title}" zkopírován!`);
+  };
+  
+  return (
+    <div className="p-4 bg-secondary/30 rounded-lg">
+      <div className="flex items-center justify-between mb-2">
+        <p className="font-medium">{title}</p>
+        <Button onClick={copyText} size="sm" variant="outline">
+          <Copy className="h-4 w-4 mr-2" />
+          Kopírovat
+        </Button>
+      </div>
+      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{text}</p>
     </div>
   );
 }
