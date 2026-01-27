@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -159,6 +159,92 @@ export default function VideoRecreateStudio() {
     onError: () => toast.error("Generování selhalo"),
   });
 
+  const uploadVideo = trpc.videoRecreate.uploadVideo.useMutation({
+    onSuccess: () => {
+      refetchProject();
+      toast.success("Video nahráno úspěšně");
+    },
+    onError: () => toast.error("Nahrávání selhalo"),
+  });
+
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (500MB max)
+    if (file.size > 500 * 1024 * 1024) {
+      toast.error("Soubor je příliš velký. Maximum je 500MB.");
+      return;
+    }
+
+    // Validate file type
+    const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Nepodporovaný formát. Použijte MP4, MOV, AVI nebo WebM.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 50));
+        }
+      };
+      
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+        setUploadProgress(60);
+        
+        // First create project if needed, then upload
+        if (!selectedProjectId) {
+          // Create project first
+          const result = await createProject.mutateAsync({
+            ...newProject,
+            sourceType: 'upload',
+          });
+          setUploadProgress(70);
+          
+          if (result.projectId) {
+            await uploadVideo.mutateAsync({
+              projectId: result.projectId,
+              fileName: file.name,
+              fileData: base64,
+              mimeType: file.type,
+            });
+          }
+        } else {
+          await uploadVideo.mutateAsync({
+            projectId: selectedProjectId,
+            fileName: file.name,
+            fileData: base64,
+            mimeType: file.type,
+          });
+        }
+        
+        setUploadProgress(100);
+        setShowNewProjectDialog(false);
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error("Nahrávání selhalo");
+    } finally {
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 1000);
+    }
+  };
+
   const deleteProject = trpc.videoRecreate.deleteProject.useMutation({
     onSuccess: () => {
       setSelectedProjectId(null);
@@ -315,12 +401,34 @@ export default function VideoRecreateStudio() {
                   
                   {newProject.sourceType === "upload" && (
                     <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                      <Upload className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-2">Přetáhněte video sem nebo klikněte pro výběr</p>
-                      <p className="text-xs text-gray-500">MP4, MOV, AVI do 500MB</p>
-                      <Button variant="outline" className="mt-4" onClick={() => toast.info("Nahrávání bude brzy dostupné")}>
-                        Vybrat soubor
-                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-12 w-12 text-pink-500 mx-auto mb-4 animate-spin" />
+                          <p className="text-white mb-2">Nahrávám video...</p>
+                          <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
+                          <p className="text-xs text-gray-400 mt-2">{uploadProgress}%</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                          <p className="text-gray-400 mb-2">Přetáhněte video sem nebo klikněte pro výběr</p>
+                          <p className="text-xs text-gray-500">MP4, MOV, AVI, WebM do 500MB</p>
+                          <Button 
+                            variant="outline" 
+                            className="mt-4" 
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            Vybrat soubor
+                          </Button>
+                        </>
+                      )}
                     </div>
                   )}
                   

@@ -190,6 +190,20 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 4px 30px oklch(0 0 0 / 0.8), 0 2px 10px oklch(0 0 0 / 0.6);
+    filter: drop-shadow(0 4px 20px oklch(0 0 0 / 0.7));
+  }
+  .femsider-hero-title {
+    text-shadow: 0 4px 30px oklch(0 0 0 / 0.9), 0 2px 15px oklch(0 0 0 / 0.7), 0 8px 40px oklch(0.65 0.25 10 / 0.3);
+    filter: drop-shadow(0 4px 25px oklch(0 0 0 / 0.8));
+  }
+  .femsider-parallax {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  .femsider-parallax-bg {
+    will-change: transform;
+    transition: transform 0.1s ease-out;
   }
   .femsider-card {
     background: oklch(0.12 0 0);

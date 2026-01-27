@@ -2048,3 +2048,16 @@ export async function getFullVideoProject(projectId: number) {
     jobs,
   };
 }
+
+
+// Get conversation by ID
+export async function getConversationById(conversationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+  
+  return result[0] || null;
+}

@@ -1,34 +1,50 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
+import { useState, useEffect, useRef } from "react";
 import { Play, Users, DollarSign, Shield, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import Header from "@/components/Header";
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const [scrollY, setScrollY] = useState(0);
+  const heroRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        if (rect.bottom > 0) {
+          setScrollY(window.scrollY);
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0">
+      <section ref={heroRef} className="relative overflow-hidden femsider-parallax">
+        {/* Background image with parallax */}
+        <div className="absolute inset-0 femsider-parallax-bg" style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
           <img 
             src="/banners/banner-collage.png" 
             alt="FEMSIDER" 
-            className="w-full h-full object-cover opacity-50"
+            className="w-full h-full object-cover opacity-50 scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/60" />
         </div>
         {/* Subtle glow effect */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
         
         <div className="container relative py-24 md:py-32">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 femsider-hero-title">
               <span className="femsider-text-gradient">FEMSIDER</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">

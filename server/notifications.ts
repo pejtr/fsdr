@@ -159,3 +159,163 @@ export async function notifyNewSubscriber(
     },
   });
 }
+
+
+// ============ PUSH NOTIFICATIONS ============
+
+// Store for Server-Sent Events connections
+const sseConnections = new Map<number, Set<any>>();
+
+/**
+ * Register SSE connection for user
+ */
+export function registerSSEConnection(userId: number, res: any): void {
+  if (!sseConnections.has(userId)) {
+    sseConnections.set(userId, new Set());
+  }
+  sseConnections.get(userId)!.add(res);
+  
+  // Remove connection on close
+  res.on('close', () => {
+    sseConnections.get(userId)?.delete(res);
+    if (sseConnections.get(userId)?.size === 0) {
+      sseConnections.delete(userId);
+    }
+  });
+}
+
+/**
+ * Send push notification to user via SSE
+ */
+export async function sendPushNotification(
+  userId: number,
+  notification: {
+    type: string;
+    title: string;
+    content: string;
+    linkUrl?: string;
+    relatedUserId?: number;
+  }
+): Promise<boolean> {
+  try {
+    // Store notification in database
+    await db.createNotification({
+      userId,
+      type: notification.type as any,
+      title: notification.title,
+      content: notification.content,
+      linkUrl: notification.linkUrl,
+      relatedUserId: notification.relatedUserId,
+    });
+    
+    // Send to all active SSE connections for this user
+    const connections = sseConnections.get(userId);
+    if (connections && connections.size > 0) {
+      const eventData = JSON.stringify({
+        type: 'notification',
+        data: notification,
+        timestamp: Date.now(),
+      });
+      
+      connections.forEach((res) => {
+        try {
+          res.write(`data: ${eventData}\n\n`);
+        } catch (e) {
+          // Connection might be closed
+        }
+      });
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('[Push Notification] Failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Notify user about new message
+ */
+export async function notifyNewMessage(
+  recipientId: number,
+  senderId: number,
+  messagePreview: string
+): Promise<boolean> {
+  const sender = await db.getUserById(senderId);
+  
+  return sendPushNotification(recipientId, {
+    type: 'new_message',
+    title: `💬 Nová zpráva od ${sender?.name || 'Uživatel'}`,
+    content: messagePreview.length > 100 ? messagePreview.slice(0, 100) + '...' : messagePreview,
+    linkUrl: `/messages?user=${senderId}`,
+    relatedUserId: senderId,
+  });
+}
+
+/**
+ * Notify creator about new comment
+ */
+export async function notifyNewComment(
+  creatorId: number,
+  commenterId: number,
+  contentTitle: string,
+  commentPreview: string,
+  contentType: 'video' | 'post',
+  contentId: number
+): Promise<boolean> {
+  const commenter = await db.getUserById(commenterId);
+  
+  return sendPushNotification(creatorId, {
+    type: 'new_comment',
+    title: `💬 Nový komentář na ${contentType === 'video' ? 'video' : 'příspěvek'}`,
+    content: `${commenter?.name || 'Uživatel'} komentoval "${contentTitle}": ${commentPreview.slice(0, 80)}...`,
+    linkUrl: contentType === 'video' ? `/video/${contentId}` : `/feed?post=${contentId}`,
+    relatedUserId: commenterId,
+  });
+}
+
+/**
+ * Notify user about new like
+ */
+export async function notifyNewLike(
+  creatorId: number,
+  likerId: number,
+  contentTitle: string,
+  contentType: 'video' | 'post',
+  contentId: number
+): Promise<boolean> {
+  const liker = await db.getUserById(likerId);
+  
+  return sendPushNotification(creatorId, {
+    type: 'new_like',
+    title: `❤️ Nový like!`,
+    content: `${liker?.name || 'Uživatel'} dal like na "${contentTitle}"`,
+    linkUrl: contentType === 'video' ? `/video/${contentId}` : `/feed?post=${contentId}`,
+    relatedUserId: likerId,
+  });
+}
+
+/**
+ * Notify user about new follower
+ */
+export async function notifyNewFollower(
+  creatorId: number,
+  followerId: number
+): Promise<boolean> {
+  const follower = await db.getUserById(followerId);
+  
+  return sendPushNotification(creatorId, {
+    type: 'new_follower',
+    title: `👤 Nový sledující!`,
+    content: `${follower?.name || 'Uživatel'} vás začal sledovat`,
+    linkUrl: `/profile/${followerId}`,
+    relatedUserId: followerId,
+  });
+}
+
+/**
+ * Get unread notification count for user
+ */
+export async function getUnreadNotificationCount(userId: number): Promise<number> {
+  return db.getUnreadNotificationCount(userId);
+}

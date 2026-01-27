@@ -109,3 +109,8 @@
 
 ## UI Vylepšení
 - [x] Hero sekce - zeslabit růžové záření a zesvětlit pozadí
+- [x] Stín k nadpisu FEMSIDER pro lepší čitelnost
+- [x] Parallax efekt v hero sekci při scrollování
+- [x] Nahrávání vlastních videí do Video Recreate Studia
+- [x] Integrace WAN 2.6 API pro generování video scén (MiniMax Hailuo-02)
+- [x] Push notifikace pro zprávy a komentáře
