@@ -50,3 +50,9 @@
 - [x] Sekce s propagačními materiály (bannery, texty)
 - [x] E-mailové notifikace při získání provize
 - [x] E-mailové notifikace při získání odznaku
+
+## QR kód, Bannery a Přehled odkazů
+- [x] QR kód s affiliate odkazem v promo materiálech
+- [x] Grafické bannery z poskytnutých obrázků (Yourfemalesideplatform.png, FEMSIDER.png)
+- [x] Sekce s přehledem všech odkazů a jejich výkonnosti
+- [x] Rozšířit text o "...for your VIP content"

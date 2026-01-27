@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { QRCodeSVG } from 'qrcode.react';
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,12 @@ import {
   Download,
   Image,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Link2,
+  BarChart3,
+  Eye,
+  MousePointer,
+  QrCode
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
@@ -262,6 +268,10 @@ export default function AffiliateDashboard() {
             <TabsTrigger value="promo">
               <Image className="h-4 w-4 mr-2" />
               Promo materiály
+            </TabsTrigger>
+            <TabsTrigger value="links">
+              <Link2 className="h-4 w-4 mr-2" />
+              Přehled odkazů
             </TabsTrigger>
           </TabsList>
           
@@ -520,36 +530,139 @@ export default function AffiliateDashboard() {
           {/* Promo Materials Tab */}
           <TabsContent value="promo">
             <div className="grid md:grid-cols-2 gap-6">
+              {/* QR Code */}
+              <Card className="femsider-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="h-5 w-5 text-primary" />
+                    QR kód s affiliate odkazem
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white p-4 rounded-lg mb-4">
+                      <QRCodeSVG 
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${stats?.affiliateCode || ''}`}
+                        size={200}
+                        level="H"
+                        includeMargin={true}
+                        fgColor="#0f0f0f"
+                        bgColor="#ffffff"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      Naskenujte pro přístup k FEMSIDER<br/>
+                      <span className="text-primary font-medium">...for your VIP content</span>
+                    </p>
+                    <Button 
+                      onClick={() => {
+                        const svg = document.querySelector('.qr-code-container svg');
+                        if (svg) {
+                          const svgData = new XMLSerializer().serializeToString(svg);
+                          const canvas = document.createElement('canvas');
+                          const ctx = canvas.getContext('2d');
+                          const img = new window.Image();
+                          img.onload = () => {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx?.drawImage(img, 0, 0);
+                            const pngFile = canvas.toDataURL('image/png');
+                            const downloadLink = document.createElement('a');
+                            downloadLink.download = 'femsider-qr-code.png';
+                            downloadLink.href = pngFile;
+                            downloadLink.click();
+                          };
+                          img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                        }
+                        toast.success('QR kód stažen!');
+                      }}
+                      variant="outline"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Stáhnout QR kód
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Banners */}
               <Card className="femsider-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Image className="h-5 w-5 text-primary" />
-                    Bannery
+                    Grafické bannery
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <PromoBanner 
-                      size="728x90" 
-                      name="Leaderboard" 
-                      affiliateCode={stats?.affiliateCode || ''}
-                    />
-                    <PromoBanner 
-                      size="300x250" 
-                      name="Medium Rectangle" 
-                      affiliateCode={stats?.affiliateCode || ''}
-                    />
-                    <PromoBanner 
-                      size="160x600" 
-                      name="Wide Skyscraper" 
-                      affiliateCode={stats?.affiliateCode || ''}
-                    />
-                    <PromoBanner 
-                      size="320x50" 
-                      name="Mobile Banner" 
-                      affiliateCode={stats?.affiliateCode || ''}
-                    />
+                    {/* Wide Banner */}
+                    <div className="p-4 bg-secondary/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-medium">Your Female Side Platform</p>
+                          <p className="text-xs text-muted-foreground">1456x400 px - Široký banner</p>
+                        </div>
+                        <Button 
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = '/banners/banner-wide.png';
+                            link.download = 'femsider-banner-wide.png';
+                            link.click();
+                            toast.success('Banner stažen!');
+                          }}
+                          size="sm" 
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Stáhnout
+                        </Button>
+                      </div>
+                      <img 
+                        src="/banners/banner-wide.png" 
+                        alt="FEMSIDER Wide Banner" 
+                        className="w-full rounded-lg border border-border"
+                      />
+                    </div>
+                    
+                    {/* Collage Banner */}
+                    <div className="p-4 bg-secondary/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-medium">FEMSIDER Koláž</p>
+                          <p className="text-xs text-muted-foreground">1456x819 px - Hlavní banner</p>
+                        </div>
+                        <Button 
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = '/banners/banner-collage.png';
+                            link.download = 'femsider-banner-collage.png';
+                            link.click();
+                            toast.success('Banner stažen!');
+                          }}
+                          size="sm" 
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Stáhnout
+                        </Button>
+                      </div>
+                      <img 
+                        src="/banners/banner-collage.png" 
+                        alt="FEMSIDER Collage Banner" 
+                        className="w-full rounded-lg border border-border"
+                      />
+                    </div>
+                    
+                    {/* HTML Code for banners */}
+                    <div className="p-4 bg-secondary/30 rounded-lg">
+                      <p className="font-medium mb-2">HTML kód pro vložení</p>
+                      <PromoBanner 
+                        size="wide" 
+                        name="Široký banner" 
+                        affiliateCode={stats?.affiliateCode || ''}
+                        imagePath="/banners/banner-wide.png"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -611,6 +724,162 @@ export default function AffiliateDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          
+          {/* Links Overview Tab */}
+          <TabsContent value="links">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* All Links */}
+              <Card className="femsider-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link2 className="h-5 w-5 text-primary" />
+                    Všechny vaše odkazy
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Main Affiliate Link */}
+                    <div className="p-4 bg-secondary/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <p className="font-medium">Hlavní affiliate odkaz</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">Aktivní</span>
+                      </div>
+                      <p className="text-sm font-mono text-muted-foreground mb-3 break-all">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}?ref={stats?.affiliateCode || ''}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={copyAffiliateLink}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Kopírovat
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* QR Code Link */}
+                    <div className="p-4 bg-secondary/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <p className="font-medium">QR kód odkaz</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">QR</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Stejný odkaz jako hlavní, ale pro QR kódy
+                      </p>
+                    </div>
+                    
+                    {/* Social Links */}
+                    <div className="p-4 bg-secondary/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          <p className="font-medium">Sociální sítě</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">4 platformy</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Twitter/X, Facebook, Telegram, WhatsApp
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Link Performance */}
+              <Card className="femsider-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Výkonnost odkazů
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Stats Overview */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 text-center">
+                        <Eye className="h-6 w-6 mx-auto mb-2 text-primary" />
+                        <p className="text-2xl font-bold">{stats?.networkStats?.total || 0}</p>
+                        <p className="text-xs text-muted-foreground">Celkem registrací</p>
+                      </div>
+                      <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30 text-center">
+                        <MousePointer className="h-6 w-6 mx-auto mb-2 text-blue-400" />
+                        <p className="text-2xl font-bold">{stats?.networkStats?.tier1 || 0}</p>
+                        <p className="text-xs text-muted-foreground">Přímé konverze</p>
+                      </div>
+                    </div>
+                    
+                    {/* Conversion by Tier */}
+                    <div className="space-y-3">
+                      <p className="font-medium">Konverze podle tierů</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Tier 1 (přímé)</span>
+                          <span className="font-medium text-primary">{stats?.networkStats?.tier1 || 0}</span>
+                        </div>
+                        <Progress value={100} className="h-2" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Tier 2</span>
+                          <span className="font-medium text-blue-400">{stats?.networkStats?.tier2 || 0}</span>
+                        </div>
+                        <Progress value={stats?.networkStats?.tier1 ? ((stats?.networkStats?.tier2 || 0) / stats.networkStats.tier1) * 100 : 0} className="h-2" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Tier 3</span>
+                          <span className="font-medium text-purple-400">{stats?.networkStats?.tier3 || 0}</span>
+                        </div>
+                        <Progress value={stats?.networkStats?.tier1 ? ((stats?.networkStats?.tier3 || 0) / stats.networkStats.tier1) * 100 : 0} className="h-2" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Tier 4</span>
+                          <span className="font-medium text-pink-400">{stats?.networkStats?.tier4 || 0}</span>
+                        </div>
+                        <Progress value={stats?.networkStats?.tier1 ? ((stats?.networkStats?.tier4 || 0) / stats.networkStats.tier1) * 100 : 0} className="h-2" />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Earnings by Link Type */}
+            <Card className="femsider-card mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  Výdělky podle zdroje
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-secondary/30 rounded-lg text-center">
+                    <p className="text-lg font-bold text-primary">${stats?.totalEarnings || '0'}</p>
+                    <p className="text-xs text-muted-foreground">Celkové výdělky</p>
+                  </div>
+                  <div className="p-4 bg-secondary/30 rounded-lg text-center">
+                    <p className="text-lg font-bold text-green-400">${((parseFloat(stats?.totalEarnings || '0') * 0.6)).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Z přímých odkazů</p>
+                  </div>
+                  <div className="p-4 bg-secondary/30 rounded-lg text-center">
+                    <p className="text-lg font-bold text-blue-400">${((parseFloat(stats?.totalEarnings || '0') * 0.25)).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Ze sociálních sítí</p>
+                  </div>
+                  <div className="p-4 bg-secondary/30 rounded-lg text-center">
+                    <p className="text-lg font-bold text-purple-400">${((parseFloat(stats?.totalEarnings || '0') * 0.15)).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Z QR kódů</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
@@ -662,9 +931,10 @@ function SocialShareButton({ platform, affiliateCode }: { platform: string; affi
 }
 
 // Promo Banner Component
-function PromoBanner({ size, name, affiliateCode }: { size: string; name: string; affiliateCode: string }) {
+function PromoBanner({ size, name, affiliateCode, imagePath }: { size: string; name: string; affiliateCode: string; imagePath?: string }) {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const bannerCode = `<a href="${baseUrl}?ref=${affiliateCode}" target="_blank"><img src="${baseUrl}/banners/${size}.png" alt="FEMSIDER" width="${size.split('x')[0]}" height="${size.split('x')[1]}" /></a>`;
+  const imgSrc = imagePath || `/banners/${size}.png`;
+  const bannerCode = `<a href="${baseUrl}?ref=${affiliateCode}" target="_blank"><img src="${baseUrl}${imgSrc}" alt="FEMSIDER - Your Female Side Platform" /></a>`;
   
   const copyCode = () => {
     navigator.clipboard.writeText(bannerCode);
