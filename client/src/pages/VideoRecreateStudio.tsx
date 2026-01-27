@@ -62,6 +62,7 @@ import {
   VolumeX,
   SkipBack,
   SkipForward,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -96,8 +97,232 @@ const SCENE_TYPE_LABELS: Record<string, string> = {
   kiss: "Polibek",
   intimate: "Intimní",
   transition: "Přechod",
+  transformation: "Transformace",
+  body_swap: "Body Swap",
   other: "Ostatní",
 };
+
+// TG/TF Transformation Šablony scénářů inspirované Femsider YouTube kanály
+const TGTF_TEMPLATES = [
+  {
+    id: "sisters_exchange",
+    title: "Sister's Exchange",
+    description: "Bratr a sestra si vymění těla pomocí magického artefaktu",
+    category: "body_swap",
+    tags: ["tg", "tf", "mtf", "body_swap", "siblings"],
+    thumbnail: "/templates/sisters-exchange.jpg",
+    scenes: [
+      { type: "intro", prompt: "Young man discovers ancient medallion in sister's room, curious expression, cinematic lighting" },
+      { type: "transformation", prompt: "Magical transformation sequence, body morphing, glowing energy, male to female transition" },
+      { type: "reaction", prompt: "Shocked expression looking in mirror, feminine reflection, dramatic lighting" },
+      { type: "adaptation", prompt: "Learning to move in new female body, awkward but curious, soft lighting" },
+    ],
+  },
+  {
+    id: "wishing_to_be_her",
+    title: "Wishing to be Her",
+    description: "Přání se splní a muž se stane ženou svých snů",
+    category: "transformation",
+    tags: ["tg", "tf", "mtf", "wish", "magic"],
+    thumbnail: "/templates/wishing-to-be-her.jpg",
+    scenes: [
+      { type: "intro", prompt: "Man looking longingly at beautiful woman, desire in eyes, romantic atmosphere" },
+      { type: "wish", prompt: "Making a wish under starlight, mystical atmosphere, hopeful expression" },
+      { type: "transformation", prompt: "Gradual transformation sequence, body changing, hair growing, feminine features emerging" },
+      { type: "reveal", prompt: "Beautiful woman looking at reflection, satisfied smile, glamorous lighting" },
+    ],
+  },
+  {
+    id: "hells_life_saga",
+    title: "Hell's Life Saga",
+    description: "Temná transformace s nadpřirozenými prvky",
+    category: "transformation",
+    tags: ["tg", "tf", "mtf", "dark", "supernatural"],
+    thumbnail: "/templates/hells-life-saga.jpg",
+    scenes: [
+      { type: "intro", prompt: "Dark mysterious setting, ominous atmosphere, man encountering supernatural entity" },
+      { type: "curse", prompt: "Demonic curse being cast, red glowing eyes, dark magic swirling" },
+      { type: "transformation", prompt: "Painful transformation sequence, body contorting, dark energy, male to female" },
+      { type: "aftermath", prompt: "Transformed woman with supernatural beauty, dark elegance, mysterious aura" },
+    ],
+  },
+  {
+    id: "baby_witch",
+    title: "Baby Witch",
+    description: "Začínající čarodějka omylem transformuje muže",
+    category: "magic",
+    tags: ["tg", "tf", "mtf", "witch", "magic", "accident"],
+    thumbnail: "/templates/baby-witch.jpg",
+    scenes: [
+      { type: "intro", prompt: "Young witch practicing spells, magical room with candles and potions" },
+      { type: "accident", prompt: "Spell goes wrong, magical explosion, surprised expressions" },
+      { type: "transformation", prompt: "Accidental transformation, sparkles and magic, male becoming female" },
+      { type: "comedy", prompt: "Witch trying to reverse spell, comedic situation, transformed person confused" },
+    ],
+  },
+  {
+    id: "magic_roulette",
+    title: "Magic Roulette",
+    description: "Hra s osudem - magická ruleta rozhoduje o transformaci",
+    category: "game",
+    tags: ["tg", "tf", "mtf", "game", "roulette", "chance"],
+    thumbnail: "/templates/magic-roulette.jpg",
+    scenes: [
+      { type: "intro", prompt: "Mystical roulette wheel glowing with magic, group of people watching nervously" },
+      { type: "spin", prompt: "Roulette spinning with magical energy, anticipation, dramatic lighting" },
+      { type: "transformation", prompt: "Winner being transformed, magical energy surrounding body, gender change" },
+      { type: "result", prompt: "Newly transformed woman examining herself, mix of shock and acceptance" },
+    ],
+  },
+  {
+    id: "stepmother_daughters",
+    title: "Stepmother Daughter's",
+    description: "Rodinná dynamika se změní po transformaci",
+    category: "family",
+    tags: ["tg", "tf", "mtf", "family", "stepmother"],
+    thumbnail: "/templates/stepmother-daughters.jpg",
+    scenes: [
+      { type: "intro", prompt: "Family dinner scene, tension between stepson and stepmother" },
+      { type: "conflict", prompt: "Argument escalating, emotional confrontation" },
+      { type: "transformation", prompt: "Unexpected transformation triggered by emotions, body changing" },
+      { type: "resolution", prompt: "New understanding between family members, transformed person finding acceptance" },
+    ],
+  },
+  {
+    id: "hotel_aphrodite",
+    title: "Hotel Aphrodite",
+    description: "Tajemný hotel kde se hosté transformují",
+    category: "location",
+    tags: ["tg", "tf", "mtf", "hotel", "mystery"],
+    thumbnail: "/templates/hotel-aphrodite.jpg",
+    scenes: [
+      { type: "intro", prompt: "Elegant mysterious hotel entrance, art deco style, man checking in" },
+      { type: "discovery", prompt: "Strange occurrences in hotel room, mirrors showing different reflection" },
+      { type: "transformation", prompt: "Hotel's magic taking effect, gradual transformation, luxurious setting" },
+      { type: "reveal", prompt: "Beautiful woman in elegant hotel room, embracing new identity" },
+    ],
+  },
+  {
+    id: "chromosome_of_desire",
+    title: "Chromosome of Desire",
+    description: "Vědecký experiment s neočekávanými výsledky",
+    category: "scifi",
+    tags: ["tg", "tf", "mtf", "science", "experiment"],
+    thumbnail: "/templates/chromosome-of-desire.jpg",
+    scenes: [
+      { type: "intro", prompt: "Scientific laboratory, DNA research, scientist examining samples" },
+      { type: "experiment", prompt: "Experimental procedure, high-tech equipment, subject in chamber" },
+      { type: "transformation", prompt: "Genetic transformation in progress, scientific visualization, body changing" },
+      { type: "result", prompt: "Successful transformation, scientist amazed at results, beautiful female subject" },
+    ],
+  },
+  {
+    id: "my_sisters_room",
+    title: "My Sister's Room",
+    description: "Zvědavost vede k neočekávané transformaci",
+    category: "discovery",
+    tags: ["tg", "tf", "mtf", "curiosity", "siblings"],
+    thumbnail: "/templates/my-sisters-room.jpg",
+    scenes: [
+      { type: "intro", prompt: "Brother sneaking into sister's room, curious expression, feminine decor" },
+      { type: "discovery", prompt: "Finding mysterious object or clothing, temptation" },
+      { type: "transformation", prompt: "Trying on items triggers transformation, surprised reaction, body changing" },
+      { type: "caught", prompt: "Sister returns, comedic or dramatic confrontation, transformed brother" },
+    ],
+  },
+  {
+    id: "tgtf_comet",
+    title: "TGTF Comet",
+    description: "Kosmická událost způsobuje hromadné transformace",
+    category: "cosmic",
+    tags: ["tg", "tf", "mtf", "comet", "cosmic", "mass_transformation"],
+    thumbnail: "/templates/tgtf-comet.jpg",
+    scenes: [
+      { type: "intro", prompt: "Night sky with approaching comet, people watching in awe" },
+      { type: "impact", prompt: "Comet's energy wave hitting Earth, cosmic light washing over city" },
+      { type: "transformation", prompt: "Multiple people transforming simultaneously, cosmic energy, gender changes" },
+      { type: "new_world", prompt: "Aftermath of mass transformation, society adapting to changes" },
+    ],
+  },
+  {
+    id: "girlfriends_friend",
+    title: "Girlfriend's Friend",
+    description: "Přátelství se změní po transformaci",
+    category: "relationship",
+    tags: ["tg", "tf", "mtf", "friendship", "girlfriend"],
+    thumbnail: "/templates/girlfriends-friend.jpg",
+    scenes: [
+      { type: "intro", prompt: "Couple with female friend, social gathering, casual atmosphere" },
+      { type: "jealousy", prompt: "Tension and jealousy building, emotional undercurrents" },
+      { type: "transformation", prompt: "Unexpected transformation of boyfriend, becoming female" },
+      { type: "new_dynamic", prompt: "Three women navigating new friendship dynamic, acceptance" },
+    ],
+  },
+  {
+    id: "online_goth_girl",
+    title: "Online Goth Girl",
+    description: "Online identita se stane realitou",
+    category: "digital",
+    tags: ["tg", "tf", "mtf", "online", "goth", "avatar"],
+    thumbnail: "/templates/online-goth-girl.jpg",
+    scenes: [
+      { type: "intro", prompt: "Person creating female goth avatar online, dark aesthetic, computer screen" },
+      { type: "immersion", prompt: "Deep connection with online persona, blurring reality" },
+      { type: "transformation", prompt: "Avatar becoming real, transformation into goth girl, dark makeup appearing" },
+      { type: "embrace", prompt: "Fully transformed goth girl, embracing dark aesthetic, confident pose" },
+    ],
+  },
+];
+
+// TG/TF Kategorie
+const TGTF_CATEGORIES = [
+  { value: "all", label: "Všechny šablony", icon: Sparkles },
+  { value: "body_swap", label: "Body Swap", icon: RefreshCw },
+  { value: "transformation", label: "Transformace", icon: Wand2 },
+  { value: "magic", label: "Magie", icon: Sparkles },
+  { value: "scifi", label: "Sci-Fi", icon: Film },
+  { value: "family", label: "Rodina", icon: Heart },
+  { value: "relationship", label: "Vztahy", icon: Heart },
+];
+
+// Přednaštavené prompty pro TG/TF generování
+const TGTF_PROMPT_PRESETS = [
+  {
+    id: "transformation_sequence",
+    label: "Transformační sekvence",
+    prompt: "Cinematic transformation sequence, male to female gender change, body morphing smoothly, magical energy particles, dramatic lighting, high quality, detailed",
+  },
+  {
+    id: "mirror_reveal",
+    label: "Zrcadlové odhalení",
+    prompt: "Person looking at mirror reflection, shocked expression seeing female reflection, dramatic reveal moment, soft lighting, emotional",
+  },
+  {
+    id: "body_discovery",
+    label: "Objevování nového těla",
+    prompt: "Newly transformed woman exploring her body, curious and amazed expression, touching face and hair, intimate moment, soft lighting",
+  },
+  {
+    id: "clothing_change",
+    label: "Změna oblečení",
+    prompt: "Transformed person trying on feminine clothing for first time, mix of nervousness and excitement, mirror reflection, bedroom setting",
+  },
+  {
+    id: "acceptance_moment",
+    label: "Moment přijetí",
+    prompt: "Beautiful woman smiling at reflection, accepting new identity, confident pose, warm lighting, emotional satisfaction",
+  },
+  {
+    id: "romantic_scene",
+    label: "Romantická scéna",
+    prompt: "Transformed woman in romantic setting, soft focus, intimate atmosphere, feminine beauty, emotional connection",
+  },
+  {
+    id: "before_after",
+    label: "Před a po",
+    prompt: "Split screen effect showing before and after transformation, male on left, female on right, same pose, dramatic comparison",
+  },
+];
 
 export default function VideoRecreateStudio() {
   const { user, isAuthenticated } = useAuth();
@@ -117,6 +342,29 @@ export default function VideoRecreateStudio() {
     generateNude: false,
     generateAudio: true,
   });
+
+  // Template selection state
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<typeof TGTF_TEMPLATES[0] | null>(null);
+  const [templateCategory, setTemplateCategory] = useState("all");
+  const [selectedPromptPreset, setSelectedPromptPreset] = useState<string | null>(null);
+
+  // Filtered templates by category
+  const filteredTemplates = templateCategory === "all" 
+    ? TGTF_TEMPLATES 
+    : TGTF_TEMPLATES.filter(t => t.category === templateCategory);
+
+  // Apply template to new project
+  const applyTemplate = (template: typeof TGTF_TEMPLATES[0]) => {
+    setSelectedTemplate(template);
+    setNewProject(prev => ({
+      ...prev,
+      title: template.title,
+      description: template.description,
+    }));
+    setShowTemplates(false);
+    toast.success(`Šablona "${template.title}" aplikována`);
+  };
 
   // Fetch projects
   const { data: projects, isLoading: projectsLoading, refetch: refetchProjects } = 
@@ -583,6 +831,99 @@ export default function VideoRecreateStudio() {
                 </DialogHeader>
                 
                 <div className="space-y-6 py-4">
+                  {/* TG/TF Template Selection */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">TG/TF Šablona scénáře</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-pink-500/50 text-pink-400 hover:bg-pink-500/20"
+                        onClick={() => setShowTemplates(!showTemplates)}
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {selectedTemplate ? "Změnit šablonu" : "Vybrat šablonu"}
+                      </Button>
+                    </div>
+                    
+                    {selectedTemplate && (
+                      <div className="p-3 rounded-lg bg-pink-500/10 border border-pink-500/30">
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-12 rounded bg-gradient-to-br from-pink-500/30 to-purple-500/30 flex items-center justify-center">
+                            <Film className="h-6 w-6 text-pink-400" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white font-medium">{selectedTemplate.title}</p>
+                            <p className="text-gray-400 text-sm">{selectedTemplate.description}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-400 hover:text-white"
+                            onClick={() => setSelectedTemplate(null)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {selectedTemplate.tags.map(tag => (
+                            <Badge key={tag} variant="outline" className="text-xs border-pink-500/30 text-pink-400">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {showTemplates && (
+                      <div className="p-4 rounded-lg bg-[#0f0f0f] border border-white/10 space-y-4">
+                        {/* Category Filter */}
+                        <div className="flex flex-wrap gap-2">
+                          {TGTF_CATEGORIES.map(cat => (
+                            <Button
+                              key={cat.value}
+                              variant="outline"
+                              size="sm"
+                              className={`${
+                                templateCategory === cat.value
+                                  ? "bg-pink-500/20 border-pink-500 text-pink-400"
+                                  : "border-white/20 text-gray-400 hover:border-pink-500/50"
+                              }`}
+                              onClick={() => setTemplateCategory(cat.value)}
+                            >
+                              <cat.icon className="h-3 w-3 mr-1" />
+                              {cat.label}
+                            </Button>
+                          ))}
+                        </div>
+                        
+                        {/* Template Grid */}
+                        <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                          {filteredTemplates.map(template => (
+                            <button
+                              key={template.id}
+                              onClick={() => applyTemplate(template)}
+                              className="p-3 rounded-lg bg-[#1a1a1a] border border-white/10 hover:border-pink-500/50 text-left transition-colors"
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-10 h-8 rounded bg-gradient-to-br from-pink-500/30 to-purple-500/30 flex items-center justify-center">
+                                  <Film className="h-4 w-4 text-pink-400" />
+                                </div>
+                                <p className="text-white font-medium text-sm">{template.title}</p>
+                              </div>
+                              <p className="text-gray-400 text-xs line-clamp-2">{template.description}</p>
+                              <div className="flex items-center gap-1 mt-2">
+                                <Badge variant="outline" className="text-[10px] border-pink-500/30 text-pink-400">
+                                  {template.scenes.length} scén
+                                </Badge>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   {/* Title & Description */}
                   <div className="space-y-2">
                     <Label className="text-white">Název projektu</Label>

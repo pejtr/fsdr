@@ -128,3 +128,10 @@
 - [x] Modální okno s video přehrávačem pro náhled před sdílením
 - [x] Ovládací prvky (play/pause, hlasitost, fullscreen)
 - [x] Integrace s tlačítkem sdílení
+
+## TG/TF Transformation Šablony
+- [x] Šablony scénářů (Sister's Exchange, Wishing to be Her, Hell's Life Saga atd.)
+- [x] Přednaštavené prompty pro AI generování TG/TF videí
+- [x] Kategorie a tagy pro TG/TF obsah
+- [x] UI pro výběr šablon v Video Recreate Studiu
+- [x] Změna textu "tisícům" na "k mnoha" a nadpisu na "Připraven začít vydělávat svou vášní?"

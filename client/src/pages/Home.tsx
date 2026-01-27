@@ -127,10 +127,10 @@ export default function Home() {
         <div className="container">
           <div className="femsider-card p-8 md:p-12 text-center femsider-glow">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Připraven začít vydělávat?
+              Připraven začít vydělávat svou vášní?
             </h2>
             <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-              Připoj se k tisícům tvůrců, kteří již monetizují svůj obsah na FEMSIDER.
+              Připoj se k mnoha tvůrcům, kteří již monetizují svůj obsah na FEMSIDER.
             </p>
             {!isAuthenticated && (
               <a href={getLoginUrl()}>
