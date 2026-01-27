@@ -16,6 +16,10 @@ import Settings from "./pages/Settings";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import PayoutSettings from "./pages/PayoutSettings";
 import YouTubeStudio from "./pages/YouTubeStudio";
+import Feed from "./pages/Feed";
+import Messages from "./pages/Messages";
+import AIAssistant from "./pages/AIAssistant";
+import VideoRecreateStudio from "./pages/VideoRecreateStudio";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 function Router() {
@@ -38,6 +42,10 @@ function Router() {
           <Route path="/affiliate" component={AffiliateDashboard} />
           <Route path="/payouts" component={PayoutSettings} />
           <Route path="/youtube-studio" component={YouTubeStudio} />
+          <Route path="/feed" component={Feed} />
+          <Route path="/messages" component={Messages} />
+          <Route path="/ai-assistant" component={AIAssistant} />
+          <Route path="/video-recreate" component={VideoRecreateStudio} />
         </>
       )}
       

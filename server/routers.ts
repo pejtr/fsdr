@@ -897,6 +897,745 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // ============ NEWSFEED ============
+  feed: router({
+    // Get feed posts
+    getPosts: protectedProcedure
+      .input(z.object({ limit: z.number().default(20), offset: z.number().default(0) }))
+      .query(async ({ ctx, input }) => {
+        const posts = await db.getFeedPosts(ctx.user.id, input.limit, input.offset);
+        // Enrich with author data and like status
+        const enriched = await Promise.all(posts.map(async (post) => {
+          const author = await db.getUserById(post.authorId);
+          const hasLiked = await db.hasUserLikedPost(post.id, ctx.user.id);
+          return {
+            ...post,
+            author: author ? { id: author.id, name: author.name, avatarUrl: author.avatarUrl, role: author.role } : null,
+            hasLiked,
+          };
+        }));
+        return enriched;
+      }),
+    
+    // Get public feed (for non-logged users)
+    getPublicPosts: publicProcedure
+      .input(z.object({ limit: z.number().default(20), offset: z.number().default(0) }))
+      .query(async ({ input }) => {
+        const posts = await db.getPublicFeedPosts(input.limit, input.offset);
+        const enriched = await Promise.all(posts.map(async (post) => {
+          const author = await db.getUserById(post.authorId);
+          return {
+            ...post,
+            author: author ? { id: author.id, name: author.name, avatarUrl: author.avatarUrl, role: author.role } : null,
+            hasLiked: false,
+          };
+        }));
+        return enriched;
+      }),
+    
+    // Get creator's posts
+    getCreatorPosts: publicProcedure
+      .input(z.object({ creatorId: z.number(), limit: z.number().default(20), offset: z.number().default(0) }))
+      .query(async ({ ctx, input }) => {
+        const posts = await db.getCreatorPosts(input.creatorId, input.limit, input.offset);
+        const enriched = await Promise.all(posts.map(async (post) => {
+          const author = await db.getUserById(post.authorId);
+          const hasLiked = ctx.user ? await db.hasUserLikedPost(post.id, ctx.user.id) : false;
+          return {
+            ...post,
+            author: author ? { id: author.id, name: author.name, avatarUrl: author.avatarUrl, role: author.role } : null,
+            hasLiked,
+          };
+        }));
+        return enriched;
+      }),
+    
+    // Create post
+    createPost: creatorProcedure
+      .input(z.object({
+        content: z.string().optional(),
+        imageUrl: z.string().optional(),
+        videoId: z.number().optional(),
+        visibility: z.enum(["public", "subscribers", "private"]).default("public"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!input.content && !input.imageUrl && !input.videoId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Post must have content, image or video' });
+        }
+        const postId = await db.createPost({
+          authorId: ctx.user.id,
+          ...input,
+        });
+        return { postId };
+      }),
+    
+    // Delete post
+    deletePost: protectedProcedure
+      .input(z.object({ postId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const post = await db.getPostById(input.postId);
+        if (!post) throw new TRPCError({ code: 'NOT_FOUND' });
+        if (post.authorId !== ctx.user.id && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        await db.deletePost(input.postId);
+        return { success: true };
+      }),
+    
+    // Like/unlike post
+    toggleLike: protectedProcedure
+      .input(z.object({ postId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const liked = await db.togglePostLike(input.postId, ctx.user.id);
+        return { liked };
+      }),
+    
+    // Get comments for post
+    getComments: publicProcedure
+      .input(z.object({ postId: z.number(), limit: z.number().default(50), offset: z.number().default(0) }))
+      .query(async ({ ctx, input }) => {
+        const comments = await db.getPostComments(input.postId, input.limit, input.offset);
+        const enriched = await Promise.all(comments.map(async (comment) => {
+          const author = await db.getUserById(comment.authorId);
+          return {
+            ...comment,
+            author: author ? { id: author.id, name: author.name, avatarUrl: author.avatarUrl } : null,
+          };
+        }));
+        return enriched;
+      }),
+    
+    // Add comment
+    addComment: protectedProcedure
+      .input(z.object({
+        postId: z.number().optional(),
+        videoId: z.number().optional(),
+        parentId: z.number().optional(),
+        content: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!input.postId && !input.videoId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Must specify postId or videoId' });
+        }
+        const commentId = await db.createComment({
+          authorId: ctx.user.id,
+          ...input,
+        });
+        
+        // Create notification for post/video author
+        if (input.postId) {
+          const post = await db.getPostById(input.postId);
+          if (post && post.authorId !== ctx.user.id) {
+            await db.createNotification({
+              userId: post.authorId,
+              type: 'new_comment',
+              title: 'Nový komentář',
+              content: `${ctx.user.name || 'Uživatel'} okomentoval váš příspěvek`,
+              relatedUserId: ctx.user.id,
+              linkUrl: `/feed?post=${input.postId}`,
+            });
+          }
+        }
+        
+        return { commentId };
+      }),
+    
+    // Delete comment
+    deleteComment: protectedProcedure
+      .input(z.object({ commentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        // TODO: verify ownership
+        await db.deleteComment(input.commentId);
+        return { success: true };
+      }),
+    
+    // Like comment
+    toggleCommentLike: protectedProcedure
+      .input(z.object({ commentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const liked = await db.toggleCommentLike(input.commentId, ctx.user.id);
+        return { liked };
+      }),
+  }),
+
+  // ============ FOLLOWS ============
+  follow: router({
+    // Follow user
+    follow: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot follow yourself' });
+        }
+        const success = await db.followUser(ctx.user.id, input.userId);
+        
+        if (success) {
+          // Create notification
+          await db.createNotification({
+            userId: input.userId,
+            type: 'new_follower',
+            title: 'Nový sledující',
+            content: `${ctx.user.name || 'Uživatel'} vás začal sledovat`,
+            relatedUserId: ctx.user.id,
+            linkUrl: `/profile/${ctx.user.id}`,
+          });
+        }
+        
+        return { success };
+      }),
+    
+    // Unfollow user
+    unfollow: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const success = await db.unfollowUser(ctx.user.id, input.userId);
+        return { success };
+      }),
+    
+    // Check if following
+    isFollowing: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return db.isFollowing(ctx.user.id, input.userId);
+      }),
+    
+    // Get followers
+    getFollowers: publicProcedure
+      .input(z.object({ userId: z.number(), limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        return db.getFollowers(input.userId, input.limit);
+      }),
+    
+    // Get following
+    getFollowing: publicProcedure
+      .input(z.object({ userId: z.number(), limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        return db.getFollowing(input.userId, input.limit);
+      }),
+    
+    // Get follow counts
+    getCounts: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getFollowCounts(input.userId);
+      }),
+  }),
+
+  // ============ DIRECT MESSAGING ============
+  messages: router({
+    // Get conversations
+    getConversations: protectedProcedure.query(async ({ ctx }) => {
+      const convs = await db.getUserConversations(ctx.user.id);
+      // Enrich with other participant data
+      const enriched = await Promise.all(convs.map(async (conv) => {
+        const otherUserId = conv.participant1Id === ctx.user.id ? conv.participant2Id : conv.participant1Id;
+        const otherUser = await db.getUserById(otherUserId);
+        const unreadCount = conv.participant1Id === ctx.user.id ? conv.unreadCount1 : conv.unreadCount2;
+        return {
+          ...conv,
+          otherUser: otherUser ? { id: otherUser.id, name: otherUser.name, avatarUrl: otherUser.avatarUrl } : null,
+          unreadCount,
+        };
+      }));
+      return enriched;
+    }),
+    
+    // Start or get conversation with user
+    startConversation: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot message yourself' });
+        }
+        const conv = await db.getOrCreateConversation(ctx.user.id, input.userId);
+        return conv;
+      }),
+    
+    // Get messages in conversation
+    getMessages: protectedProcedure
+      .input(z.object({ conversationId: z.number(), limit: z.number().default(50), beforeId: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        // Mark as read
+        await db.markMessagesAsRead(input.conversationId, ctx.user.id);
+        const msgs = await db.getConversationMessages(input.conversationId, input.limit, input.beforeId);
+        return msgs.reverse(); // Return in chronological order
+      }),
+    
+    // Send message
+    send: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        content: z.string().optional(),
+        imageUrl: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!input.content && !input.imageUrl) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Message must have content or image' });
+        }
+        const messageId = await db.sendMessage(input.conversationId, ctx.user.id, input.content || '', input.imageUrl);
+        return { messageId };
+      }),
+    
+    // Mark conversation as read
+    markRead: protectedProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.markMessagesAsRead(input.conversationId, ctx.user.id);
+        return { success: true };
+      }),
+    
+    // Get unread count
+    getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
+      return db.getTotalUnreadMessages(ctx.user.id);
+    }),
+  }),
+
+  // ============ AI CHATBOT ============
+  chatbot: router({
+    // Get conversations
+    getConversations: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserChatbotConversations(ctx.user.id);
+    }),
+    
+    // Create new conversation
+    createConversation: protectedProcedure
+      .input(z.object({
+        context: z.enum(["general", "content_tips", "thumbnail_generation", "analytics", "marketing"]).default("general"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const conversationId = await db.createChatbotConversation(ctx.user.id, input.context);
+        return { conversationId };
+      }),
+    
+    // Get messages in conversation
+    getMessages: protectedProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        // Verify ownership
+        const conv = await db.getChatbotConversation(input.conversationId);
+        if (!conv || conv.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        return db.getChatbotMessages(input.conversationId);
+      }),
+    
+    // Send message and get AI response
+    sendMessage: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        content: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verify ownership
+        const conv = await db.getChatbotConversation(input.conversationId);
+        if (!conv || conv.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        
+        // Save user message
+        await db.addChatbotMessage(input.conversationId, 'user', input.content);
+        
+        // Get conversation history for context
+        const history = await db.getChatbotMessages(input.conversationId);
+        
+        // Build system prompt based on context
+        let systemPrompt = `Jsi FEMSIDER AI asistent, který pomáhá tvůrcům obsahu na platformě FEMSIDER. 
+FEMSIDER je premiérová platforma pro NSFW obsah, která nabízí 88% podíl z příjmů pro tvůrce a víceúrovňový affiliate program.
+Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétní a užitečné rady.`;
+        
+        switch (conv.context) {
+          case 'content_tips':
+            systemPrompt += `\n\nSpecializuješ se na tipy pro zlepšení obsahu. Pomáhej s:
+- Optimalizací názvů a popisů videí
+- Strategií pro zvýšení angažovanosti
+- Plánováním obsahu a konzistencí
+- Budováním komunity a interakcí s fanoušky`;
+            break;
+          case 'thumbnail_generation':
+            systemPrompt += `\n\nSpecializuješ se na tvorbu miniatur. Pomáhej s:
+- Návrhy efektivních miniatur
+- Barevnými schématy a kompozicí
+- A/B testováním a optimalizací CTR
+- Psychologií klikání a pozornosti`;
+            break;
+          case 'analytics':
+            systemPrompt += `\n\nSpecializuješ se na analýzu dat. Pomáhej s:
+- Interpretací metrik a statistik
+- Identifikací trendů a příležitostí
+- Optimalizací výkonu obsahu
+- Srovnáním s průměry v odvětví`;
+            break;
+          case 'marketing':
+            systemPrompt += `\n\nSpecializuješ se na marketing a propagaci. Pomáhej s:
+- Strategií pro sociální sítě
+- Affiliate marketingem a partnerstvími
+- Budováním osobní značky
+- Monetizací a cenovou strategií`;
+            break;
+        }
+        
+        // Call LLM
+        const { invokeLLM } = await import('./_core/llm');
+        
+        const messages = [
+          { role: 'system' as const, content: systemPrompt },
+          ...history.slice(-10).map(m => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+          { role: 'user' as const, content: input.content },
+        ];
+        
+        try {
+          const response = await invokeLLM({ messages });
+          const rawContent = response.choices[0]?.message?.content;
+          const assistantContent = typeof rawContent === 'string' ? rawContent : 'Omlouvám se, nepodařilo se mi vygenerovat odpověď.';
+          
+          // Save assistant response
+          await db.addChatbotMessage(input.conversationId, 'assistant', assistantContent);
+          
+          return { response: assistantContent };
+        } catch (error) {
+          console.error('LLM error:', error);
+          const errorMessage = 'Omlouvám se, došlo k chybě při zpracování vašeho dotazu. Zkuste to prosím znovu.';
+          await db.addChatbotMessage(input.conversationId, 'assistant', errorMessage);
+          return { response: errorMessage };
+        }
+      }),
+    
+    // Delete conversation
+    deleteConversation: protectedProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const conv = await db.getChatbotConversation(input.conversationId);
+        if (!conv || conv.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        await db.deleteChatbotConversation(input.conversationId);
+        return { success: true };
+      }),
+  }),
+
+  // ============ NOTIFICATIONS ============
+  notifications: router({
+    // Get notifications
+    getAll: protectedProcedure
+      .input(z.object({ limit: z.number().default(50), unreadOnly: z.boolean().default(false) }))
+      .query(async ({ ctx, input }) => {
+        return db.getUserNotifications(ctx.user.id, input.limit, input.unreadOnly);
+      }),
+    
+    // Mark as read
+    markRead: protectedProcedure
+      .input(z.object({ notificationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.markNotificationAsRead(input.notificationId);
+        return { success: true };
+      }),
+    
+    // Mark all as read
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await db.markAllNotificationsAsRead(ctx.user.id);
+      return { success: true };
+    }),
+    
+    // Get unread count
+    getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUnreadNotificationCount(ctx.user.id);
+    }),
+  }),
+
+  // ============ VIDEO RECREATE STUDIO ============
+  videoRecreate: router({
+    // Create new project
+    createProject: creatorProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        sourceType: z.enum(["upload", "url", "youtube"]),
+        sourceUrl: z.string().optional(),
+        projectType: z.enum(["remake", "sequel", "extend_scene"]).default("extend_scene"),
+        targetModel: z.enum(["hailuo_ai", "veo_3", "wan_2_6"]).default("wan_2_6"),
+        generateNude: z.boolean().default(false),
+        generateAudio: z.boolean().default(true),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const projectId = await db.createVideoProject({
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { projectId };
+      }),
+    
+    // Get user's projects
+    getProjects: creatorProcedure
+      .input(z.object({ limit: z.number().default(20), offset: z.number().default(0) }))
+      .query(async ({ ctx, input }) => {
+        return db.getUserVideoProjects(ctx.user.id, input.limit, input.offset);
+      }),
+    
+    // Get single project with all data
+    getProject: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const project = await db.getFullVideoProject(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        return project;
+      }),
+    
+    // Update project
+    updateProject: creatorProcedure
+      .input(z.object({
+        projectId: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        targetModel: z.enum(["hailuo_ai", "veo_3", "wan_2_6"]).optional(),
+        generateNude: z.boolean().optional(),
+        generateAudio: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        const { projectId, ...data } = input;
+        await db.updateVideoProject(projectId, data);
+        return { success: true };
+      }),
+    
+    // Delete project
+    deleteProject: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        await db.deleteVideoProject(input.projectId);
+        return { success: true };
+      }),
+    
+    // Start video analysis (mock - would call AI service)
+    analyzeVideo: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        
+        // Update status to analyzing
+        await db.updateVideoProject(input.projectId, {
+          status: 'analyzing',
+          analysisStatus: 'processing',
+        });
+        
+        // Create analysis job
+        await db.createGenerationJob({
+          projectId: input.projectId,
+          jobType: 'analysis',
+          provider: 'internal',
+          status: 'processing',
+          startedAt: new Date(),
+        });
+        
+        // Mock: Generate sample scenes (in real app would call AI video analysis API)
+        const mockScenes = [
+          { type: 'dialogue', start: 0, end: 15000, desc: 'Úvod - postava mluví do kamery', canExtend: false },
+          { type: 'action', start: 15000, end: 30000, desc: 'Akce - chůze a pohyb', canExtend: false },
+          { type: 'romantic', start: 30000, end: 45000, desc: 'Romantická scéna - blízký kontakt', canExtend: true },
+          { type: 'kiss', start: 45000, end: 52000, desc: 'Líbací scéna - intenzivní moment', canExtend: true, isKey: true },
+          { type: 'dialogue', start: 52000, end: 70000, desc: 'Dialog po scéně', canExtend: false },
+          { type: 'intimate', start: 70000, end: 90000, desc: 'Intimní scéna - možnost rozšíření', canExtend: true, isKey: true },
+        ];
+        
+        for (let i = 0; i < mockScenes.length; i++) {
+          const scene = mockScenes[i];
+          const sceneId = await db.createVideoScene({
+            projectId: input.projectId,
+            sceneNumber: i + 1,
+            startTime: scene.start,
+            endTime: scene.end,
+            duration: scene.end - scene.start,
+            sceneType: scene.type as any,
+            isKeyScene: scene.isKey || false,
+            canExtend: scene.canExtend,
+            description: scene.desc,
+            prompt: `Generate a ${scene.type} scene: ${scene.desc}`,
+            extensionSuggestion: scene.canExtend ? `Rozšiřte tuto ${scene.type} scénu o další detaily a emoce` : null,
+          });
+          
+          // Generate 4 screenshots for extendable scenes
+          if (scene.canExtend && sceneId) {
+            for (let f = 1; f <= 4; f++) {
+              const timestamp = scene.start + Math.floor((scene.end - scene.start) * (f / 5));
+              await db.createSceneScreenshot({
+                sceneId,
+                projectId: input.projectId,
+                frameNumber: f,
+                timestamp,
+                imageUrl: `/api/placeholder/screenshot-${input.projectId}-${sceneId}-${f}.jpg`,
+                description: `Frame ${f} z ${scene.type} scény`,
+                suggestedPrompt: `Continue this ${scene.type} scene with more intensity`,
+              });
+            }
+          }
+        }
+        
+        // Update project with analysis results
+        await db.updateVideoProject(input.projectId, {
+          status: 'draft',
+          analysisStatus: 'completed',
+          analysisResult: JSON.stringify({
+            totalScenes: mockScenes.length,
+            keyScenes: mockScenes.filter(s => s.isKey).length,
+            extendableScenes: mockScenes.filter(s => s.canExtend).length,
+            duration: 90000,
+          }),
+          originalDuration: 90,
+        });
+        
+        return { success: true, message: 'Analýza dokončena' };
+      }),
+    
+    // Get scenes for project
+    getScenes: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        return db.getProjectScenes(input.projectId);
+      }),
+    
+    // Get extendable scenes
+    getExtendableScenes: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        const scenes = await db.getExtendableScenes(input.projectId);
+        // Get screenshots for each scene
+        const scenesWithScreenshots = await Promise.all(scenes.map(async (scene) => {
+          const screenshots = await db.getSceneScreenshots(scene.id);
+          return { ...scene, screenshots };
+        }));
+        return scenesWithScreenshots;
+      }),
+    
+    // Select screenshot for scene
+    selectScreenshot: creatorProcedure
+      .input(z.object({ screenshotId: z.number(), sceneId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.selectScreenshot(input.screenshotId, input.sceneId);
+        return { success: true };
+      }),
+    
+    // Generate extended scene (mock - would call text-to-video API)
+    generateScene: creatorProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sceneId: z.number(),
+        screenshotId: z.number().optional(),
+        customPrompt: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        
+        // Get scene and screenshot
+        const scenes = await db.getProjectScenes(input.projectId);
+        const scene = scenes.find(s => s.id === input.sceneId);
+        if (!scene) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Scéna nenalezena' });
+        }
+        
+        let referenceImageUrl = null;
+        if (input.screenshotId) {
+          const screenshots = await db.getSceneScreenshots(input.sceneId);
+          const screenshot = screenshots.find(s => s.id === input.screenshotId);
+          referenceImageUrl = screenshot?.imageUrl;
+        }
+        
+        // Create generation segment
+        const existingSegments = await db.getProjectSegments(input.projectId);
+        const segmentNumber = existingSegments.length + 1;
+        
+        const segmentId = await db.createGeneratedSegment({
+          projectId: input.projectId,
+          sceneId: input.sceneId,
+          segmentNumber,
+          prompt: input.customPrompt || scene.prompt || `Extend ${scene.sceneType} scene`,
+          referenceImageUrl,
+          model: project.targetModel as any,
+          duration: 6000,
+          includeNude: project.generateNude || false,
+          includeAudio: project.generateAudio || true,
+          status: 'generating',
+        });
+        
+        // Create generation job
+        await db.createGenerationJob({
+          projectId: input.projectId,
+          segmentId,
+          jobType: 'generation',
+          provider: project.targetModel as any,
+          status: 'processing',
+          startedAt: new Date(),
+        });
+        
+        // Mock: Simulate generation completion after delay
+        // In real app, this would be handled by webhook from AI service
+        setTimeout(async () => {
+          await db.updateGeneratedSegment(segmentId!, {
+            status: 'completed',
+            videoUrl: `/api/placeholder/generated-${input.projectId}-${segmentId}.mp4`,
+            completedAt: new Date(),
+            qualityScore: '0.85',
+          });
+        }, 3000);
+        
+        return { segmentId, message: 'Generování zahájeno' };
+      }),
+    
+    // Get generated segments
+    getSegments: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        return db.getProjectSegments(input.projectId);
+      }),
+    
+    // Rate generated segment
+    rateSegment: creatorProcedure
+      .input(z.object({ segmentId: z.number(), rating: z.number().min(1).max(5) }))
+      .mutation(async ({ input }) => {
+        await db.rateSegment(input.segmentId, input.rating);
+        return { success: true };
+      }),
+    
+    // Get generation jobs status
+    getJobs: creatorProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        return db.getProjectJobs(input.projectId);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

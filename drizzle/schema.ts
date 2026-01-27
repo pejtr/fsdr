@@ -352,3 +352,279 @@ export const youtubeChannelStats = mysqlTable("youtubeChannelStats", {
 
 export type YoutubeChannelStat = typeof youtubeChannelStats.$inferSelect;
 export type InsertYoutubeChannelStat = typeof youtubeChannelStats.$inferInsert;
+
+
+// Posts (newsfeed)
+export const posts = mysqlTable("posts", {
+  id: int("id").autoincrement().primaryKey(),
+  authorId: int("authorId").notNull(),
+  content: text("content"),
+  imageUrl: text("imageUrl"),
+  videoId: int("videoId"), // optional link to video
+  isPinned: boolean("isPinned").default(false),
+  likeCount: int("likeCount").default(0),
+  commentCount: int("commentCount").default(0),
+  visibility: mysqlEnum("visibility", ["public", "subscribers", "private"]).default("public"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = typeof posts.$inferInsert;
+
+// Post likes
+export const postLikes = mysqlTable("postLikes", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("postId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PostLike = typeof postLikes.$inferSelect;
+export type InsertPostLike = typeof postLikes.$inferInsert;
+
+// Comments (for posts and videos)
+export const comments = mysqlTable("comments", {
+  id: int("id").autoincrement().primaryKey(),
+  authorId: int("authorId").notNull(),
+  postId: int("postId"), // null if comment on video
+  videoId: int("videoId"), // null if comment on post
+  parentId: int("parentId"), // for replies
+  content: text("content").notNull(),
+  likeCount: int("likeCount").default(0),
+  isEdited: boolean("isEdited").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = typeof comments.$inferInsert;
+
+// Comment likes
+export const commentLikes = mysqlTable("commentLikes", {
+  id: int("id").autoincrement().primaryKey(),
+  commentId: int("commentId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CommentLike = typeof commentLikes.$inferSelect;
+export type InsertCommentLike = typeof commentLikes.$inferInsert;
+
+// Follows (user follows creator)
+export const follows = mysqlTable("follows", {
+  id: int("id").autoincrement().primaryKey(),
+  followerId: int("followerId").notNull(),
+  followingId: int("followingId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Follow = typeof follows.$inferSelect;
+export type InsertFollow = typeof follows.$inferInsert;
+
+// Direct messages conversations
+export const conversations = mysqlTable("conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  participant1Id: int("participant1Id").notNull(),
+  participant2Id: int("participant2Id").notNull(),
+  lastMessageAt: timestamp("lastMessageAt"),
+  lastMessagePreview: varchar("lastMessagePreview", { length: 255 }),
+  unreadCount1: int("unreadCount1").default(0), // unread for participant1
+  unreadCount2: int("unreadCount2").default(0), // unread for participant2
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = typeof conversations.$inferInsert;
+
+// Direct messages
+export const messages = mysqlTable("messages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  senderId: int("senderId").notNull(),
+  content: text("content"),
+  imageUrl: text("imageUrl"),
+  isRead: boolean("isRead").default(false),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
+
+// AI chatbot conversations
+export const chatbotConversations = mysqlTable("chatbotConversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }),
+  context: mysqlEnum("context", ["general", "content_tips", "thumbnail_generation", "analytics", "marketing"]).default("general"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChatbotConversation = typeof chatbotConversations.$inferSelect;
+export type InsertChatbotConversation = typeof chatbotConversations.$inferInsert;
+
+// AI chatbot messages
+export const chatbotMessages = mysqlTable("chatbotMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  role: mysqlEnum("role", ["user", "assistant"]).notNull(),
+  content: text("content").notNull(),
+  metadata: text("metadata"), // JSON with additional data (e.g., generated images)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChatbotMessage = typeof chatbotMessages.$inferSelect;
+export type InsertChatbotMessage = typeof chatbotMessages.$inferInsert;
+
+// Notifications
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  type: mysqlEnum("type", ["new_follower", "new_subscriber", "new_message", "new_comment", "new_like", "payout", "badge", "system"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content"),
+  linkUrl: varchar("linkUrl", { length: 512 }),
+  relatedUserId: int("relatedUserId"),
+  isRead: boolean("isRead").default(false),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+
+// ============ VIDEO RECREATE SYSTEM ============
+
+// Video projects for AI recreation/extension
+export const videoProjects = mysqlTable("videoProjects", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  // Source video info
+  sourceType: mysqlEnum("sourceType", ["upload", "url", "youtube"]).notNull(),
+  sourceUrl: text("sourceUrl"),
+  sourceVideoId: int("sourceVideoId"), // FK to videos table if from platform
+  originalDuration: int("originalDuration"), // in seconds
+  // Project type
+  projectType: mysqlEnum("projectType", ["remake", "sequel", "extend_scene"]).default("extend_scene"),
+  // AI analysis results
+  analysisStatus: mysqlEnum("analysisStatus", ["pending", "processing", "completed", "failed"]).default("pending"),
+  analysisResult: text("analysisResult"), // JSON with scene breakdown, prompts, etc.
+  // Generation settings
+  targetModel: mysqlEnum("targetModel", ["hailuo_ai", "veo_3", "wan_2_6"]).default("wan_2_6"),
+  generateNude: boolean("generateNude").default(false),
+  generateAudio: boolean("generateAudio").default(true),
+  // Output
+  outputVideoUrl: text("outputVideoUrl"),
+  outputDuration: int("outputDuration"),
+  status: mysqlEnum("status", ["draft", "analyzing", "generating", "completed", "failed"]).default("draft"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VideoProject = typeof videoProjects.$inferSelect;
+export type InsertVideoProject = typeof videoProjects.$inferInsert;
+
+// Detected scenes from video analysis
+export const videoScenes = mysqlTable("videoScenes", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(), // FK to videoProjects
+  sceneNumber: int("sceneNumber").notNull(),
+  startTime: int("startTime").notNull(), // in milliseconds
+  endTime: int("endTime").notNull(), // in milliseconds
+  duration: int("duration").notNull(), // in milliseconds
+  // Scene classification
+  sceneType: mysqlEnum("sceneType", ["dialogue", "action", "romantic", "kiss", "intimate", "transition", "other"]).default("other"),
+  isKeyScene: boolean("isKeyScene").default(false), // Marked for potential extension
+  // AI-generated content
+  description: text("description"), // AI description of the scene
+  prompt: text("prompt"), // Generated prompt for text-to-video
+  characters: text("characters"), // JSON array of detected characters
+  emotions: text("emotions"), // JSON array of detected emotions
+  // Extension options
+  canExtend: boolean("canExtend").default(false),
+  extensionSuggestion: text("extensionSuggestion"), // AI suggestion for how to extend
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VideoScene = typeof videoScenes.$inferSelect;
+export type InsertVideoScene = typeof videoScenes.$inferInsert;
+
+// Screenshots/frames from scenes for user selection
+export const sceneScreenshots = mysqlTable("sceneScreenshots", {
+  id: int("id").autoincrement().primaryKey(),
+  sceneId: int("sceneId").notNull(), // FK to videoScenes
+  projectId: int("projectId").notNull(), // FK to videoProjects
+  frameNumber: int("frameNumber").notNull(), // 1-4 typically
+  timestamp: int("timestamp").notNull(), // in milliseconds
+  imageUrl: text("imageUrl").notNull(),
+  thumbnailUrl: text("thumbnailUrl"),
+  isSelected: boolean("isSelected").default(false), // User selected this frame
+  // AI analysis of frame
+  description: text("description"),
+  suggestedPrompt: text("suggestedPrompt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SceneScreenshot = typeof sceneScreenshots.$inferSelect;
+export type InsertSceneScreenshot = typeof sceneScreenshots.$inferInsert;
+
+// Generated video segments
+export const generatedSegments = mysqlTable("generatedSegments", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(), // FK to videoProjects
+  sceneId: int("sceneId"), // FK to videoScenes (if extending specific scene)
+  segmentNumber: int("segmentNumber").notNull(),
+  // Generation input
+  prompt: text("prompt").notNull(),
+  referenceImageUrl: text("referenceImageUrl"), // Screenshot used as reference
+  model: mysqlEnum("model", ["hailuo_ai", "veo_3", "wan_2_6"]).notNull(),
+  // Generation settings
+  duration: int("duration").default(6000), // in milliseconds, default 6 seconds
+  includeNude: boolean("includeNude").default(false),
+  includeAudio: boolean("includeAudio").default(true),
+  // Output
+  videoUrl: text("videoUrl"),
+  audioUrl: text("audioUrl"),
+  status: mysqlEnum("status", ["pending", "generating", "completed", "failed"]).default("pending"),
+  errorMessage: text("errorMessage"),
+  // Quality metrics
+  qualityScore: decimal("qualityScore", { precision: 3, scale: 2 }), // 0.00 - 1.00
+  userRating: int("userRating"), // 1-5 stars
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type GeneratedSegment = typeof generatedSegments.$inferSelect;
+export type InsertGeneratedSegment = typeof generatedSegments.$inferInsert;
+
+// Video generation queue/jobs
+export const videoGenerationJobs = mysqlTable("videoGenerationJobs", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  segmentId: int("segmentId"),
+  jobType: mysqlEnum("jobType", ["analysis", "screenshot", "generation", "merge"]).notNull(),
+  // External API tracking
+  externalJobId: varchar("externalJobId", { length: 128 }),
+  provider: mysqlEnum("provider", ["hailuo_ai", "veo_3", "wan_2_6", "internal"]).notNull(),
+  // Status
+  status: mysqlEnum("status", ["queued", "processing", "completed", "failed", "cancelled"]).default("queued"),
+  progress: int("progress").default(0), // 0-100
+  errorMessage: text("errorMessage"),
+  // Timing
+  queuedAt: timestamp("queuedAt").defaultNow().notNull(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  // Cost tracking
+  estimatedCost: decimal("estimatedCost", { precision: 10, scale: 4 }),
+  actualCost: decimal("actualCost", { precision: 10, scale: 4 }),
+});
+
+export type VideoGenerationJob = typeof videoGenerationJobs.$inferSelect;
+export type InsertVideoGenerationJob = typeof videoGenerationJobs.$inferInsert;

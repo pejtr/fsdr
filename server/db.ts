@@ -1279,3 +1279,772 @@ export async function getYoutubeOverviewStats(userId: number) {
     stats: videosResult[0]
   };
 }
+
+
+// ============ NEWSFEED FUNCTIONS ============
+
+import { 
+  posts, InsertPost, Post,
+  postLikes, InsertPostLike,
+  comments, InsertComment, Comment,
+  commentLikes, InsertCommentLike,
+  follows, InsertFollow
+} from "../drizzle/schema";
+
+// Posts
+export async function createPost(post: InsertPost) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(posts).values(post);
+  return result[0].insertId;
+}
+
+export async function getPostById(postId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updatePost(postId: number, data: Partial<InsertPost>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(posts).set({ ...data, updatedAt: new Date() }).where(eq(posts.id, postId));
+}
+
+export async function deletePost(postId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(posts).where(eq(posts.id, postId));
+}
+
+export async function getFeedPosts(userId: number, limit = 20, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get posts from followed users and own posts
+  const followedIds = await db.select({ followingId: follows.followingId })
+    .from(follows)
+    .where(eq(follows.followerId, userId));
+  
+  const followedUserIds = followedIds.map(f => f.followingId);
+  followedUserIds.push(userId); // Include own posts
+  
+  if (followedUserIds.length === 0) {
+    // Return public posts if not following anyone
+    return db.select().from(posts)
+      .where(eq(posts.visibility, "public"))
+      .orderBy(desc(posts.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+  
+  return db.select().from(posts)
+    .where(sql`${posts.authorId} IN (${followedUserIds.join(',')}) AND (${posts.visibility} = 'public' OR ${posts.visibility} = 'subscribers')`)
+    .orderBy(desc(posts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getPublicFeedPosts(limit = 20, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(posts)
+    .where(eq(posts.visibility, "public"))
+    .orderBy(desc(posts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getCreatorPosts(creatorId: number, limit = 20, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(posts)
+    .where(eq(posts.authorId, creatorId))
+    .orderBy(desc(posts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+// Post likes
+export async function togglePostLike(postId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const existing = await db.select().from(postLikes)
+    .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    await db.delete(postLikes).where(eq(postLikes.id, existing[0].id));
+    await db.update(posts).set({ likeCount: sql`${posts.likeCount} - 1` }).where(eq(posts.id, postId));
+    return false;
+  } else {
+    await db.insert(postLikes).values({ postId, userId });
+    await db.update(posts).set({ likeCount: sql`${posts.likeCount} + 1` }).where(eq(posts.id, postId));
+    return true;
+  }
+}
+
+export async function hasUserLikedPost(postId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select().from(postLikes)
+    .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)))
+    .limit(1);
+  return result.length > 0;
+}
+
+// Comments
+export async function createComment(comment: InsertComment) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(comments).values(comment);
+  
+  // Update comment count on post or video
+  if (comment.postId) {
+    await db.update(posts).set({ commentCount: sql`${posts.commentCount} + 1` }).where(eq(posts.id, comment.postId));
+  }
+  
+  return result[0].insertId;
+}
+
+export async function getPostComments(postId: number, limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(comments)
+    .where(and(eq(comments.postId, postId), sql`${comments.parentId} IS NULL`))
+    .orderBy(desc(comments.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getVideoComments(videoId: number, limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(comments)
+    .where(and(eq(comments.videoId, videoId), sql`${comments.parentId} IS NULL`))
+    .orderBy(desc(comments.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getCommentReplies(parentId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(comments)
+    .where(eq(comments.parentId, parentId))
+    .orderBy(comments.createdAt)
+    .limit(limit);
+}
+
+export async function deleteComment(commentId: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const comment = await db.select().from(comments).where(eq(comments.id, commentId)).limit(1);
+  if (comment.length === 0) return;
+  
+  // Update comment count
+  if (comment[0].postId) {
+    await db.update(posts).set({ commentCount: sql`${posts.commentCount} - 1` }).where(eq(posts.id, comment[0].postId));
+  }
+  
+  await db.delete(comments).where(eq(comments.id, commentId));
+}
+
+// Comment likes
+export async function toggleCommentLike(commentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const existing = await db.select().from(commentLikes)
+    .where(and(eq(commentLikes.commentId, commentId), eq(commentLikes.userId, userId)))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    await db.delete(commentLikes).where(eq(commentLikes.id, existing[0].id));
+    await db.update(comments).set({ likeCount: sql`${comments.likeCount} - 1` }).where(eq(comments.id, commentId));
+    return false;
+  } else {
+    await db.insert(commentLikes).values({ commentId, userId });
+    await db.update(comments).set({ likeCount: sql`${comments.likeCount} + 1` }).where(eq(comments.id, commentId));
+    return true;
+  }
+}
+
+// Follows
+export async function followUser(followerId: number, followingId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const existing = await db.select().from(follows)
+    .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+    .limit(1);
+  
+  if (existing.length > 0) return false;
+  
+  await db.insert(follows).values({ followerId, followingId });
+  return true;
+}
+
+export async function unfollowUser(followerId: number, followingId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  await db.delete(follows).where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)));
+  return true;
+}
+
+export async function isFollowing(followerId: number, followingId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select().from(follows)
+    .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+    .limit(1);
+  return result.length > 0;
+}
+
+export async function getFollowers(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({ followerId: follows.followerId })
+    .from(follows)
+    .where(eq(follows.followingId, userId))
+    .limit(limit);
+  
+  return Promise.all(result.map(async (f) => {
+    const user = await getUserById(f.followerId);
+    return user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl } : null;
+  })).then(users => users.filter(Boolean));
+}
+
+export async function getFollowing(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({ followingId: follows.followingId })
+    .from(follows)
+    .where(eq(follows.followerId, userId))
+    .limit(limit);
+  
+  return Promise.all(result.map(async (f) => {
+    const user = await getUserById(f.followingId);
+    return user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl } : null;
+  })).then(users => users.filter(Boolean));
+}
+
+export async function getFollowCounts(userId: number) {
+  const db = await getDb();
+  if (!db) return { followers: 0, following: 0 };
+  
+  const followers = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(follows)
+    .where(eq(follows.followingId, userId));
+  
+  const following = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(follows)
+    .where(eq(follows.followerId, userId));
+  
+  return {
+    followers: followers[0]?.count ?? 0,
+    following: following[0]?.count ?? 0,
+  };
+}
+
+// ============ DIRECT MESSAGING FUNCTIONS ============
+
+import { 
+  conversations, InsertConversation, Conversation,
+  messages, InsertMessage, Message
+} from "../drizzle/schema";
+
+export async function getOrCreateConversation(user1Id: number, user2Id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Normalize order - smaller ID is always participant1
+  const [p1, p2] = user1Id < user2Id ? [user1Id, user2Id] : [user2Id, user1Id];
+  
+  // Check if conversation exists
+  const existing = await db.select().from(conversations)
+    .where(and(
+      eq(conversations.participant1Id, p1),
+      eq(conversations.participant2Id, p2)
+    ))
+    .limit(1);
+  
+  if (existing.length > 0) return existing[0];
+  
+  // Create new conversation
+  const result = await db.insert(conversations).values({
+    participant1Id: p1,
+    participant2Id: p2,
+  });
+  
+  return {
+    id: result[0].insertId,
+    participant1Id: p1,
+    participant2Id: p2,
+    lastMessageAt: null,
+    lastMessagePreview: null,
+    unreadCount1: 0,
+    unreadCount2: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+export async function getUserConversations(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(conversations)
+    .where(sql`${conversations.participant1Id} = ${userId} OR ${conversations.participant2Id} = ${userId}`)
+    .orderBy(desc(conversations.lastMessageAt))
+    .limit(limit);
+}
+
+export async function sendMessage(conversationId: number, senderId: number, content: string, imageUrl?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Get conversation to determine recipient
+  const conv = await db.select().from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+  
+  if (conv.length === 0) return null;
+  
+  const conversation = conv[0];
+  const isParticipant1 = senderId === conversation.participant1Id;
+  
+  // Insert message
+  const result = await db.insert(messages).values({
+    conversationId,
+    senderId,
+    content,
+    imageUrl,
+  });
+  
+  // Update conversation
+  const preview = content ? content.substring(0, 100) : (imageUrl ? '📷 Image' : '');
+  const updateData: Record<string, unknown> = {
+    lastMessageAt: new Date(),
+    lastMessagePreview: preview,
+    updatedAt: new Date(),
+  };
+  
+  // Increment unread count for recipient
+  if (isParticipant1) {
+    updateData.unreadCount2 = sql`${conversations.unreadCount2} + 1`;
+  } else {
+    updateData.unreadCount1 = sql`${conversations.unreadCount1} + 1`;
+  }
+  
+  await db.update(conversations).set(updateData).where(eq(conversations.id, conversationId));
+  
+  return result[0].insertId;
+}
+
+export async function getConversationMessages(conversationId: number, limit = 50, beforeId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (beforeId) {
+    return db.select().from(messages)
+      .where(and(eq(messages.conversationId, conversationId), sql`${messages.id} < ${beforeId}`))
+      .orderBy(desc(messages.createdAt))
+      .limit(limit);
+  }
+  
+  return db.select().from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(desc(messages.createdAt))
+    .limit(limit);
+}
+
+export async function markMessagesAsRead(conversationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Get conversation
+  const conv = await db.select().from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+  
+  if (conv.length === 0) return;
+  
+  const conversation = conv[0];
+  const isParticipant1 = userId === conversation.participant1Id;
+  
+  // Mark messages as read
+  await db.update(messages).set({ isRead: true, readAt: new Date() })
+    .where(and(
+      eq(messages.conversationId, conversationId),
+      sql`${messages.senderId} != ${userId}`,
+      eq(messages.isRead, false)
+    ));
+  
+  // Reset unread count
+  if (isParticipant1) {
+    await db.update(conversations).set({ unreadCount1: 0 }).where(eq(conversations.id, conversationId));
+  } else {
+    await db.update(conversations).set({ unreadCount2: 0 }).where(eq(conversations.id, conversationId));
+  }
+}
+
+export async function getTotalUnreadMessages(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db.select({
+    total: sql<number>`SUM(CASE 
+      WHEN ${conversations.participant1Id} = ${userId} THEN ${conversations.unreadCount1}
+      WHEN ${conversations.participant2Id} = ${userId} THEN ${conversations.unreadCount2}
+      ELSE 0 END)`
+  })
+    .from(conversations)
+    .where(sql`${conversations.participant1Id} = ${userId} OR ${conversations.participant2Id} = ${userId}`);
+  
+  return result[0]?.total ?? 0;
+}
+
+// ============ AI CHATBOT FUNCTIONS ============
+
+import { 
+  chatbotConversations, InsertChatbotConversation, ChatbotConversation,
+  chatbotMessages, InsertChatbotMessage, ChatbotMessage
+} from "../drizzle/schema";
+
+export async function createChatbotConversation(userId: number, context: "general" | "content_tips" | "thumbnail_generation" | "analytics" | "marketing" = "general") {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.insert(chatbotConversations).values({
+    userId,
+    context,
+    title: `${context.replace('_', ' ')} conversation`,
+  });
+  
+  return result[0].insertId;
+}
+
+export async function getUserChatbotConversations(userId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatbotConversations)
+    .where(eq(chatbotConversations.userId, userId))
+    .orderBy(desc(chatbotConversations.updatedAt))
+    .limit(limit);
+}
+
+export async function getChatbotConversation(conversationId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(chatbotConversations)
+    .where(eq(chatbotConversations.id, conversationId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function addChatbotMessage(conversationId: number, role: "user" | "assistant", content: string, metadata?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.insert(chatbotMessages).values({
+    conversationId,
+    role,
+    content,
+    metadata,
+  });
+  
+  // Update conversation timestamp
+  await db.update(chatbotConversations).set({ updatedAt: new Date() })
+    .where(eq(chatbotConversations.id, conversationId));
+  
+  return result[0].insertId;
+}
+
+export async function getChatbotMessages(conversationId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatbotMessages)
+    .where(eq(chatbotMessages.conversationId, conversationId))
+    .orderBy(chatbotMessages.createdAt)
+    .limit(limit);
+}
+
+export async function updateChatbotConversationTitle(conversationId: number, title: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(chatbotConversations).set({ title, updatedAt: new Date() })
+    .where(eq(chatbotConversations.id, conversationId));
+}
+
+export async function deleteChatbotConversation(conversationId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(chatbotMessages).where(eq(chatbotMessages.conversationId, conversationId));
+  await db.delete(chatbotConversations).where(eq(chatbotConversations.id, conversationId));
+}
+
+// ============ NOTIFICATIONS FUNCTIONS ============
+
+import { notifications, InsertNotification, Notification } from "../drizzle/schema";
+
+export async function createNotification(notification: InsertNotification) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(notifications).values(notification);
+  return result[0].insertId;
+}
+
+export async function getUserNotifications(userId: number, limit = 50, unreadOnly = false) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (unreadOnly) {
+    return db.select().from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+  }
+  
+  return db.select().from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function markNotificationAsRead(notificationId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true, readAt: new Date() })
+    .where(eq(notifications.id, notificationId));
+}
+
+export async function markAllNotificationsAsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true, readAt: new Date() })
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+}
+
+export async function getUnreadNotificationCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  return result[0]?.count ?? 0;
+}
+
+
+// ============ VIDEO RECREATE FUNCTIONS ============
+
+import { 
+  videoProjects, InsertVideoProject, VideoProject,
+  videoScenes, InsertVideoScene, VideoScene,
+  sceneScreenshots, InsertSceneScreenshot, SceneScreenshot,
+  generatedSegments, InsertGeneratedSegment, GeneratedSegment,
+  videoGenerationJobs, InsertVideoGenerationJob, VideoGenerationJob
+} from "../drizzle/schema";
+
+// Video Projects
+export async function createVideoProject(project: InsertVideoProject) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(videoProjects).values(project);
+  return result[0].insertId;
+}
+
+export async function getVideoProjectById(projectId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(videoProjects).where(eq(videoProjects.id, projectId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserVideoProjects(userId: number, limit = 20, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(videoProjects)
+    .where(eq(videoProjects.userId, userId))
+    .orderBy(desc(videoProjects.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function updateVideoProject(projectId: number, data: Partial<InsertVideoProject>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(videoProjects).set({ ...data, updatedAt: new Date() }).where(eq(videoProjects.id, projectId));
+}
+
+export async function deleteVideoProject(projectId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Delete related data first
+  await db.delete(sceneScreenshots).where(eq(sceneScreenshots.projectId, projectId));
+  await db.delete(videoScenes).where(eq(videoScenes.projectId, projectId));
+  await db.delete(generatedSegments).where(eq(generatedSegments.projectId, projectId));
+  await db.delete(videoGenerationJobs).where(eq(videoGenerationJobs.projectId, projectId));
+  await db.delete(videoProjects).where(eq(videoProjects.id, projectId));
+}
+
+// Video Scenes
+export async function createVideoScene(scene: InsertVideoScene) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(videoScenes).values(scene);
+  return result[0].insertId;
+}
+
+export async function getProjectScenes(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(videoScenes)
+    .where(eq(videoScenes.projectId, projectId))
+    .orderBy(videoScenes.sceneNumber);
+}
+
+export async function getKeyScenes(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(videoScenes)
+    .where(and(eq(videoScenes.projectId, projectId), eq(videoScenes.isKeyScene, true)))
+    .orderBy(videoScenes.sceneNumber);
+}
+
+export async function getExtendableScenes(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(videoScenes)
+    .where(and(eq(videoScenes.projectId, projectId), eq(videoScenes.canExtend, true)))
+    .orderBy(videoScenes.sceneNumber);
+}
+
+export async function updateVideoScene(sceneId: number, data: Partial<InsertVideoScene>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(videoScenes).set(data).where(eq(videoScenes.id, sceneId));
+}
+
+// Scene Screenshots
+export async function createSceneScreenshot(screenshot: InsertSceneScreenshot) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(sceneScreenshots).values(screenshot);
+  return result[0].insertId;
+}
+
+export async function getSceneScreenshots(sceneId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sceneScreenshots)
+    .where(eq(sceneScreenshots.sceneId, sceneId))
+    .orderBy(sceneScreenshots.frameNumber);
+}
+
+export async function selectScreenshot(screenshotId: number, sceneId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Deselect all screenshots for this scene
+  await db.update(sceneScreenshots).set({ isSelected: false }).where(eq(sceneScreenshots.sceneId, sceneId));
+  // Select the chosen one
+  await db.update(sceneScreenshots).set({ isSelected: true }).where(eq(sceneScreenshots.id, screenshotId));
+}
+
+export async function getSelectedScreenshots(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sceneScreenshots)
+    .where(and(eq(sceneScreenshots.projectId, projectId), eq(sceneScreenshots.isSelected, true)));
+}
+
+// Generated Segments
+export async function createGeneratedSegment(segment: InsertGeneratedSegment) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(generatedSegments).values(segment);
+  return result[0].insertId;
+}
+
+export async function getProjectSegments(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(generatedSegments)
+    .where(eq(generatedSegments.projectId, projectId))
+    .orderBy(generatedSegments.segmentNumber);
+}
+
+export async function updateGeneratedSegment(segmentId: number, data: Partial<InsertGeneratedSegment>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(generatedSegments).set(data).where(eq(generatedSegments.id, segmentId));
+}
+
+export async function rateSegment(segmentId: number, rating: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(generatedSegments).set({ userRating: rating }).where(eq(generatedSegments.id, segmentId));
+}
+
+// Generation Jobs
+export async function createGenerationJob(job: InsertVideoGenerationJob) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(videoGenerationJobs).values(job);
+  return result[0].insertId;
+}
+
+export async function getProjectJobs(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(videoGenerationJobs)
+    .where(eq(videoGenerationJobs.projectId, projectId))
+    .orderBy(desc(videoGenerationJobs.queuedAt));
+}
+
+export async function updateGenerationJob(jobId: number, data: Partial<InsertVideoGenerationJob>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(videoGenerationJobs).set(data).where(eq(videoGenerationJobs.id, jobId));
+}
+
+export async function getActiveJobs(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(videoGenerationJobs)
+    .where(and(
+      eq(videoGenerationJobs.projectId, projectId),
+      sql`${videoGenerationJobs.status} IN ('queued', 'processing')`
+    ))
+    .orderBy(videoGenerationJobs.queuedAt);
+}
+
+// Get project with all related data
+export async function getFullVideoProject(projectId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const project = await getVideoProjectById(projectId);
+  if (!project) return null;
+  
+  const scenes = await getProjectScenes(projectId);
+  const segments = await getProjectSegments(projectId);
+  const jobs = await getProjectJobs(projectId);
+  
+  // Get screenshots for each scene
+  const scenesWithScreenshots = await Promise.all(scenes.map(async (scene) => {
+    const screenshots = await getSceneScreenshots(scene.id);
+    return { ...scene, screenshots };
+  }));
+  
+  return {
+    ...project,
+    scenes: scenesWithScreenshots,
+    segments,
+    jobs,
+  };
+}

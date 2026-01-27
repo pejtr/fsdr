@@ -81,3 +81,28 @@
 - [x] A/B testování miniatur s měřením proklikovosti
 - [x] Stránka pro správu YouTube kanálu a importu
 - [x] Propojení YouTube videí s rozšířenými verzemi na FEMSIDER
+
+## Newsfeed, Zprávy a AI Chatbot
+- [x] Databázové schéma pro příspěvky, komentáře, lajky a zprávy
+- [x] Newsfeed stránka s příspěvky od sledovaných tvůrců
+- [x] Vytváření příspěvků s textem a obrázky
+- [x] Lajkování příspěvků a videí
+- [x] Komentáře pod příspěvky a videa
+- [x] Systém přímých zpráv mezi uživateli
+- [x] Konverzace a historie zpráv
+- [x] Real-time notifikace o nových zprávách
+- [x] AI chatbot pro tvůrce
+- [x] Tipy na zlepšení obsahu od AI
+- [x] Generování návrhů miniatur přes AI
+
+## Video Recreate/Extend System
+- [x] Databázové schéma pro video projekty a AI analýzu
+- [x] Import videa přes odkaz nebo přímé nahrání
+- [x] AI analýza videa - přepis scénáře do promptů
+- [x] Detekce klíčových scén (líbací scény atd.)
+- [x] Generování screenshotů z časové osy (4 varianty)
+- [x] Výběr a uložení preferovaného screenshotu
+- [x] Integrace text-to-video modelů (Hailuo AI, VEO 3, WAN 2.6)
+- [x] Generování 6s rozšířených scén
+- [x] UI pro Video Recreate Studio
+- [x] Možnost vytvořit remake nebo sequel videa
