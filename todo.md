@@ -123,3 +123,8 @@
 - [x] Sdílení videí na Twitter/X
 - [x] Sdílení videí na Instagram
 - [x] Sdílení videí na TikTok
+
+## Video Přehrávač
+- [x] Modální okno s video přehrávačem pro náhled před sdílením
+- [x] Ovládací prvky (play/pause, hlasitost, fullscreen)
+- [x] Integrace s tlačítkem sdílení

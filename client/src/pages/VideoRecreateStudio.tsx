@@ -57,6 +57,11 @@ import {
   Download,
   Copy,
   ExternalLink,
+  Maximize,
+  Volume2,
+  VolumeX,
+  SkipBack,
+  SkipForward,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -294,6 +299,114 @@ export default function VideoRecreateStudio() {
     } catch (error) {
       toast.error("Stažení selhalo");
     }
+  };
+
+  // Video Player Modal State
+  const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
+  const [selectedVideoSegment, setSelectedVideoSegment] = useState<any>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const openVideoPlayer = (segment: any) => {
+    if (!segment.videoUrl) {
+      toast.error("Video není dostupné pro přehrání");
+      return;
+    }
+    setSelectedVideoSegment(segment);
+    setVideoPlayerOpen(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const closeVideoPlayer = () => {
+    setVideoPlayerOpen(false);
+    setSelectedVideoSegment(null);
+    setIsPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vol = parseFloat(e.target.value);
+    setVolume(vol);
+    if (videoRef.current) {
+      videoRef.current.volume = vol;
+    }
+    setIsMuted(vol === 0);
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = volume || 1;
+        setIsMuted(false);
+      } else {
+        videoRef.current.volume = 0;
+        setIsMuted(true);
+      }
+    }
+  };
+
+  const skipTime = (seconds: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seconds));
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (videoRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        videoRef.current.requestFullscreen();
+      }
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
   };
 
   const uploadVideo = trpc.videoRecreate.uploadVideo.useMutation({
@@ -913,10 +1026,20 @@ export default function VideoRecreateStudio() {
                                 </div>
                               ) : segment.status === "completed" ? (
                                 <>
-                                  <Video className="h-12 w-12 text-gray-500" />
+                                  {segment.videoUrl ? (
+                                    <video
+                                      src={segment.videoUrl}
+                                      className="w-full h-full object-cover"
+                                      muted
+                                      playsInline
+                                    />
+                                  ) : (
+                                    <Video className="h-12 w-12 text-gray-500" />
+                                  )}
                                   <Button
                                     size="icon"
                                     className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-pink-600/80 hover:bg-pink-600"
+                                    onClick={() => openVideoPlayer(segment)}
                                   >
                                     <Play className="h-6 w-6" />
                                   </Button>
@@ -1060,6 +1183,179 @@ export default function VideoRecreateStudio() {
               <Copy className="h-4 w-4 mr-2" />
               Zkopírovat odkaz
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Player Modal */}
+      <Dialog open={videoPlayerOpen} onOpenChange={(open) => !open && closeVideoPlayer()}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-4xl p-0 overflow-hidden">
+          <div className="relative">
+            {/* Video Element */}
+            <div className="aspect-video bg-black">
+              {selectedVideoSegment?.videoUrl && (
+                <video
+                  ref={videoRef}
+                  src={selectedVideoSegment.videoUrl}
+                  className="w-full h-full"
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={handleVideoEnded}
+                  onClick={togglePlay}
+                />
+              )}
+            </div>
+
+            {/* Video Controls Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
+              {/* Progress Bar */}
+              <div className="mb-3">
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                />
+              </div>
+
+              {/* Controls Row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {/* Skip Back */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={() => skipTime(-5)}
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+
+                  {/* Play/Pause */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-10 w-10 text-white hover:bg-white/20"
+                    onClick={togglePlay}
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-6 w-6" />
+                    ) : (
+                      <Play className="h-6 w-6" />
+                    )}
+                  </Button>
+
+                  {/* Skip Forward */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={() => skipTime(5)}
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+
+                  {/* Volume */}
+                  <div className="flex items-center gap-2 ml-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-white hover:bg-white/20"
+                      onClick={toggleMute}
+                    >
+                      {isMuted ? (
+                        <VolumeX className="h-4 w-4" />
+                      ) : (
+                        <Volume2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                    />
+                  </div>
+
+                  {/* Time Display */}
+                  <span className="text-white text-sm ml-3">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Share Button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={() => {
+                      closeVideoPlayer();
+                      handleShare(selectedVideoSegment);
+                    }}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+
+                  {/* Download Button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={() => downloadVideo(selectedVideoSegment)}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+
+                  {/* Fullscreen */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={toggleFullscreen}
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Info */}
+          <div className="p-4 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-medium">Vygenerovaný segment</h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  Délka: {selectedVideoSegment?.duration ? (selectedVideoSegment.duration / 1000).toFixed(1) : 0}s
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="border-white/20 hover:bg-white/10"
+                  onClick={() => {
+                    closeVideoPlayer();
+                    handleShare(selectedVideoSegment);
+                  }}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Sdílet
+                </Button>
+                <Button
+                  className="bg-pink-600 hover:bg-pink-700"
+                  onClick={() => downloadVideo(selectedVideoSegment)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Stáhnout
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
