@@ -10,13 +10,76 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet, Youtube } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet, Youtube, Bell, MessageSquare, Video } from "lucide-react";
+import { useState, useEffect } from "react";
+import { trpc } from "@/lib/trpc";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
+import { cs } from "date-fns/locale";
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Fetch unread notification count
+  const { data: unreadCount = 0, refetch: refetchUnread } = trpc.notifications.getUnreadCount.useQuery(
+    undefined,
+    { enabled: isAuthenticated, refetchInterval: 30000 }
+  );
+
+  // Fetch notifications
+  const { data: notifications = [], refetch: refetchNotifications } = trpc.notifications.getAll.useQuery(
+    { limit: 10, unreadOnly: false },
+    { enabled: isAuthenticated && notificationsOpen }
+  );
+
+  // Mark notification as read
+  const markReadMutation = trpc.notifications.markRead.useMutation({
+    onSuccess: () => {
+      refetchUnread();
+      refetchNotifications();
+    },
+  });
+
+  // Mark all as read
+  const markAllReadMutation = trpc.notifications.markAllRead.useMutation({
+    onSuccess: () => {
+      refetchUnread();
+      refetchNotifications();
+    },
+  });
+
+  const handleNotificationClick = (notification: any) => {
+    if (!notification.isRead) {
+      markReadMutation.mutate({ notificationId: notification.id });
+    }
+    if (notification.linkUrl) {
+      setLocation(notification.linkUrl);
+    }
+    setNotificationsOpen(false);
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'new_message':
+        return <MessageSquare className="h-4 w-4 text-blue-400" />;
+      case 'new_comment':
+        return <MessageSquare className="h-4 w-4 text-green-400" />;
+      case 'new_like':
+        return <Heart className="h-4 w-4 text-pink-400" />;
+      case 'new_follower':
+        return <Users className="h-4 w-4 text-purple-400" />;
+      case 'new_subscriber':
+        return <Heart className="h-4 w-4 text-primary" />;
+      case 'payout':
+        return <Wallet className="h-4 w-4 text-green-500" />;
+      default:
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
 
   const navLinks = [
     { href: "/browse", label: "Procházet" },
@@ -51,7 +114,107 @@ export default function Header() {
           </nav>
 
           {/* User Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <>
+                {/* Notification Bell */}
+                <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="relative">
+                      <Bell className="h-5 w-5" />
+                      {unreadCount > 0 && (
+                        <Badge 
+                          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs femsider-gradient border-0"
+                        >
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-80" align="end">
+                    <div className="flex items-center justify-between p-2 border-b border-border">
+                      <span className="font-semibold">Notifikace</span>
+                      {unreadCount > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs text-primary"
+                          onClick={() => markAllReadMutation.mutate()}
+                        >
+                          Označit vše jako přečtené
+                        </Button>
+                      )}
+                    </div>
+                    <ScrollArea className="h-[300px]">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground">
+                          Žádné notifikace
+                        </div>
+                      ) : (
+                        notifications.map((notification: any) => (
+                          <div
+                            key={notification.id}
+                            className={`p-3 border-b border-border/50 cursor-pointer hover:bg-secondary/50 transition-colors ${
+                              !notification.isRead ? 'bg-primary/5' : ''
+                            }`}
+                            onClick={() => handleNotificationClick(notification)}
+                          >
+                            <div className="flex gap-3">
+                              <div className="mt-1">
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!notification.isRead ? 'font-medium' : ''}`}>
+                                  {notification.title}
+                                </p>
+                                {notification.content && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                    {notification.content}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {formatDistanceToNow(new Date(notification.createdAt), { 
+                                    addSuffix: true, 
+                                    locale: cs 
+                                  })}
+                                </p>
+                              </div>
+                              {!notification.isRead && (
+                                <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </ScrollArea>
+                    <div className="p-2 border-t border-border">
+                      <Link href="/notifications">
+                        <Button variant="ghost" size="sm" className="w-full text-primary">
+                          Zobrazit všechny notifikace
+                        </Button>
+                      </Link>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Messages shortcut */}
+                <Link href="/messages">
+                  <Button variant="ghost" size="icon">
+                    <MessageSquare className="h-5 w-5" />
+                  </Button>
+                </Link>
+
+                {/* Video Recreate shortcut for creators */}
+                {user?.role === 'creator' && (
+                  <Link href="/video-recreate">
+                    <Button variant="ghost" size="icon">
+                      <Video className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
+
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -111,12 +274,20 @@ export default function Header() {
                     </DropdownMenuItem>
                   </Link>
                   {user?.role === 'creator' && (
-                    <Link href="/youtube-studio">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Youtube className="mr-2 h-4 w-4 text-red-500" />
-                        YouTube Studio
-                      </DropdownMenuItem>
-                    </Link>
+                    <>
+                      <Link href="/youtube-studio">
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Youtube className="mr-2 h-4 w-4 text-red-500" />
+                          YouTube Studio
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/video-recreate">
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Video className="mr-2 h-4 w-4 text-purple-500" />
+                          Video Recreate
+                        </DropdownMenuItem>
+                      </Link>
+                    </>
                   )}
                   <Link href="/settings">
                     <DropdownMenuItem className="cursor-pointer">

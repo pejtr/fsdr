@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -50,6 +50,13 @@ import {
   Check,
   AlertCircle,
   Loader2,
+  Share2,
+  Facebook,
+  Twitter,
+  Instagram,
+  Download,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -155,9 +162,139 @@ export default function VideoRecreateStudio() {
     onSuccess: () => {
       refetchProject();
       toast.success("Generování zahájeno");
+      // Start polling for completion
+      startPolling();
     },
     onError: () => toast.error("Generování selhalo"),
   });
+
+  // Polling for video generation status
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startPolling = () => {
+    if (isPolling) return;
+    setIsPolling(true);
+    
+    pollingIntervalRef.current = setInterval(async () => {
+      await refetchProject();
+      
+      // Check if all segments are completed or failed
+      if (selectedProject?.segments) {
+        const pendingSegments = selectedProject.segments.filter(
+          (s: any) => s.status === 'generating' || s.status === 'pending'
+        );
+        
+        if (pendingSegments.length === 0) {
+          stopPolling();
+          const completedCount = selectedProject.segments.filter((s: any) => s.status === 'completed').length;
+          if (completedCount > 0) {
+            toast.success(`${completedCount} video segmentů vygenerováno!`);
+          }
+        }
+      }
+    }, 5000); // Poll every 5 seconds
+  };
+
+  const stopPolling = () => {
+    setIsPolling(false);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => stopPolling();
+  }, []);
+
+  // Auto-start polling if there are generating segments
+  useEffect(() => {
+    if (selectedProject?.segments) {
+      const hasGenerating = selectedProject.segments.some(
+        (s: any) => s.status === 'generating' || s.status === 'pending'
+      );
+      if (hasGenerating && !isPolling) {
+        startPolling();
+      }
+    }
+  }, [selectedProject]);
+
+  // Social sharing state
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedSegmentForShare, setSelectedSegmentForShare] = useState<any>(null);
+
+  const handleShare = (segment: any) => {
+    setSelectedSegmentForShare(segment);
+    setShareDialogOpen(true);
+  };
+
+  const shareToSocial = (platform: string) => {
+    if (!selectedSegmentForShare?.videoUrl) {
+      toast.error("Video není dostupné pro sdílení");
+      return;
+    }
+
+    const videoUrl = selectedSegmentForShare.videoUrl;
+    const shareText = `Podívejte se na toto AI-generované video z FEMSIDER!`;
+    
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(videoUrl)}&quote=${encodeURIComponent(shareText)}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(videoUrl)}&text=${encodeURIComponent(shareText)}`;
+        break;
+      case 'instagram':
+        // Instagram doesn't have direct share URL, copy link instead
+        navigator.clipboard.writeText(videoUrl);
+        toast.success("Odkaz zkopírován! Vložte ho do Instagram Stories nebo příspěvku.");
+        setShareDialogOpen(false);
+        return;
+      case 'tiktok':
+        // TikTok doesn't have direct share URL, copy link instead
+        navigator.clipboard.writeText(videoUrl);
+        toast.success("Odkaz zkopírován! Vložte ho do TikTok.");
+        setShareDialogOpen(false);
+        return;
+      case 'copy':
+        navigator.clipboard.writeText(videoUrl);
+        toast.success("Odkaz zkopírován do schránky!");
+        setShareDialogOpen(false);
+        return;
+    }
+    
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+    setShareDialogOpen(false);
+  };
+
+  const downloadVideo = async (segment: any) => {
+    if (!segment.videoUrl) {
+      toast.error("Video není dostupné ke stažení");
+      return;
+    }
+    
+    try {
+      const response = await fetch(segment.videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `femsider-video-${segment.id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success("Stahování zahájeno");
+    } catch (error) {
+      toast.error("Stažení selhalo");
+    }
+  };
 
   const uploadVideo = trpc.videoRecreate.uploadVideo.useMutation({
     onSuccess: () => {
@@ -803,21 +940,42 @@ export default function VideoRecreateStudio() {
                                 </span>
                               </div>
                               {segment.status === "completed" && (
-                                <div className="flex items-center gap-1 mt-2">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      key={star}
-                                      onClick={() => toast.info("Hodnocení bude brzy dostupné")}
-                                      className="text-gray-500 hover:text-yellow-400 transition-colors"
+                                <>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button
+                                        key={star}
+                                        onClick={() => toast.info("Hodnocení bude brzy dostupné")}
+                                        className="text-gray-500 hover:text-yellow-400 transition-colors"
+                                      >
+                                        <Star className={`h-4 w-4 ${
+                                          segment.userRating && star <= segment.userRating
+                                            ? "fill-yellow-400 text-yellow-400"
+                                            : ""
+                                        }`} />
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1 border-white/20 hover:bg-white/10"
+                                      onClick={() => handleShare(segment)}
                                     >
-                                      <Star className={`h-4 w-4 ${
-                                        segment.userRating && star <= segment.userRating
-                                          ? "fill-yellow-400 text-yellow-400"
-                                          : ""
-                                      }`} />
-                                    </button>
-                                  ))}
-                                </div>
+                                      <Share2 className="h-4 w-4 mr-1" />
+                                      Sdílet
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-white/20 hover:bg-white/10"
+                                      onClick={() => downloadVideo(segment)}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </>
                               )}
                             </div>
                           </div>
@@ -849,6 +1007,62 @@ export default function VideoRecreateStudio() {
           </div>
         </div>
       </main>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">Sdílet video</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Vyberte platformu pro sdílení vašeho AI-generovaného videa
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <Button
+              variant="outline"
+              className="border-white/20 hover:bg-blue-600/20 hover:border-blue-500 h-16 flex-col gap-1"
+              onClick={() => shareToSocial('facebook')}
+            >
+              <Facebook className="h-6 w-6 text-blue-500" />
+              <span className="text-sm">Facebook</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 hover:bg-sky-600/20 hover:border-sky-500 h-16 flex-col gap-1"
+              onClick={() => shareToSocial('twitter')}
+            >
+              <Twitter className="h-6 w-6 text-sky-500" />
+              <span className="text-sm">Twitter / X</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 hover:bg-pink-600/20 hover:border-pink-500 h-16 flex-col gap-1"
+              onClick={() => shareToSocial('instagram')}
+            >
+              <Instagram className="h-6 w-6 text-pink-500" />
+              <span className="text-sm">Instagram</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 hover:bg-purple-600/20 hover:border-purple-500 h-16 flex-col gap-1"
+              onClick={() => shareToSocial('tiktok')}
+            >
+              <Video className="h-6 w-6 text-purple-500" />
+              <span className="text-sm">TikTok</span>
+            </Button>
+          </div>
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <Button
+              variant="outline"
+              className="w-full border-white/20 hover:bg-white/10"
+              onClick={() => shareToSocial('copy')}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Zkopírovat odkaz
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

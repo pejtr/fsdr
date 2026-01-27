@@ -114,3 +114,12 @@
 - [x] Nahrávání vlastních videí do Video Recreate Studia
 - [x] Integrace WAN 2.6 API pro generování video scén (MiniMax Hailuo-02)
 - [x] Push notifikace pro zprávy a komentáře
+
+## Nové funkce - Notifikace a Sdílení
+- [x] Notifikační zvoneček v záhlaví s počtem nepřečtených
+- [x] Automatický polling stavu generování videí
+- [x] Zobrazení hotových videí uživatelům
+- [x] Sdílení videí na Facebook
+- [x] Sdílení videí na Twitter/X
+- [x] Sdílení videí na Instagram
+- [x] Sdílení videí na TikTok
