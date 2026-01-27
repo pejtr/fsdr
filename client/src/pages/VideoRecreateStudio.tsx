@@ -420,6 +420,14 @@ export default function VideoRecreateStudio() {
     },
     onError: () => toast.error("Generování selhalo"),
   });
+  
+  const generateFromTemplate = trpc.videoRecreate.generateFromTemplate.useMutation({
+    onSuccess: () => {
+      refetchProject();
+      startPolling();
+    },
+    onError: (error) => console.error("Template generation error:", error),
+  });
 
   // Polling for video generation status
   const [isPolling, setIsPolling] = useState(false);
@@ -752,12 +760,40 @@ export default function VideoRecreateStudio() {
     onError: () => toast.error("Nepodařilo se smazat projekt"),
   });
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (!newProject.title.trim()) {
       toast.error("Zadejte název projektu");
       return;
     }
-    createProject.mutate(newProject);
+    
+    // Vytvoř projekt
+    createProject.mutate(newProject, {
+      onSuccess: async (data) => {
+        // Pokud je vybrána šablona, automaticky vygeneruj scény
+        if (selectedTemplate && data.projectId) {
+          toast.info(`Generuji ${selectedTemplate.scenes.length} scén ze šablony...`);
+          
+          // Generuj každou scénu ze šablony
+          for (let i = 0; i < selectedTemplate.scenes.length; i++) {
+            const scene = selectedTemplate.scenes[i];
+            try {
+              await generateFromTemplate.mutateAsync({
+                projectId: data.projectId,
+                prompt: scene.prompt,
+                model: "hailuo_02",
+                duration: 6,
+                aspectRatio: "16:9",
+              });
+            } catch (error) {
+              console.error(`Chyba při generování scény ${i + 1}:`, error);
+            }
+          }
+          
+          toast.success(`Všechny scény ze šablony "${selectedTemplate.title}" byly přidány do fronty`);
+          setSelectedTemplate(null);
+        }
+      }
+    });
   };
 
   if (!isAuthenticated) {
@@ -898,24 +934,29 @@ export default function VideoRecreateStudio() {
                         </div>
                         
                         {/* Template Grid */}
-                        <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                        <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto">
                           {filteredTemplates.map(template => (
                             <button
                               key={template.id}
                               onClick={() => applyTemplate(template)}
-                              className="p-3 rounded-lg bg-[#1a1a1a] border border-white/10 hover:border-pink-500/50 text-left transition-colors"
+                              className="rounded-lg bg-[#1a1a1a] border border-white/10 hover:border-pink-500/50 text-left transition-colors overflow-hidden group"
                             >
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-10 h-8 rounded bg-gradient-to-br from-pink-500/30 to-purple-500/30 flex items-center justify-center">
-                                  <Film className="h-4 w-4 text-pink-400" />
+                              <div className="relative aspect-video w-full overflow-hidden">
+                                <img 
+                                  src={template.thumbnail} 
+                                  alt={template.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                <div className="absolute bottom-2 left-2 right-2">
+                                  <p className="text-white font-medium text-sm truncate">{template.title}</p>
                                 </div>
-                                <p className="text-white font-medium text-sm">{template.title}</p>
-                              </div>
-                              <p className="text-gray-400 text-xs line-clamp-2">{template.description}</p>
-                              <div className="flex items-center gap-1 mt-2">
-                                <Badge variant="outline" className="text-[10px] border-pink-500/30 text-pink-400">
+                                <Badge variant="outline" className="absolute top-2 right-2 text-[10px] border-pink-500/50 bg-black/50 text-pink-400">
                                   {template.scenes.length} scén
                                 </Badge>
+                              </div>
+                              <div className="p-2">
+                                <p className="text-gray-400 text-xs line-clamp-2">{template.description}</p>
                               </div>
                             </button>
                           ))}

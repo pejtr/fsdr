@@ -20,6 +20,7 @@ import Feed from "./pages/Feed";
 import Messages from "./pages/Messages";
 import AIAssistant from "./pages/AIAssistant";
 import VideoRecreateStudio from "./pages/VideoRecreateStudio";
+import Gallery from "./pages/Gallery";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/messages" component={Messages} />
           <Route path="/ai-assistant" component={AIAssistant} />
           <Route path="/video-recreate" component={VideoRecreateStudio} />
+          <Route path="/gallery" component={Gallery} />
         </>
       )}
       

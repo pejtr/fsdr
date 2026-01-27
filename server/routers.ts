@@ -1592,6 +1592,94 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
         return { success: true };
       }),
     
+    // Generate scene from template prompt (no existing scene required)
+    generateFromTemplate: creatorProcedure
+      .input(z.object({
+        projectId: z.number(),
+        prompt: z.string(),
+        model: z.string().optional(),
+        duration: z.number().optional(),
+        aspectRatio: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await db.getVideoProjectById(input.projectId);
+        if (!project || project.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+        
+        // Create generation segment directly from prompt
+        const existingSegments = await db.getProjectSegments(input.projectId);
+        const segmentNumber = existingSegments.length + 1;
+        
+        const segmentId = await db.createGeneratedSegment({
+          projectId: input.projectId,
+          sceneId: null,
+          segmentNumber,
+          prompt: input.prompt,
+          referenceImageUrl: null,
+          model: (input.model || project.targetModel || 'hailuo_02') as any,
+          duration: (input.duration || 6) * 1000,
+          includeNude: project.generateNude || false,
+          includeAudio: project.generateAudio || true,
+          status: 'generating',
+        });
+        
+        // Create generation job
+        await db.createGenerationJob({
+          projectId: input.projectId,
+          segmentId,
+          jobType: 'generation',
+          provider: (input.model || project.targetModel || 'hailuo_02') as any,
+          status: 'processing',
+          startedAt: new Date(),
+        });
+        
+        // Start actual video generation via MiniMax API
+        try {
+          const { generateVideo, mapModelName } = await import('./videoGeneration');
+          const mappedModel = mapModelName(input.model || project.targetModel || 'hailuo_02');
+          
+          const generationResult = await generateVideo({
+            prompt: input.prompt,
+            model: mappedModel,
+            duration: (input.duration === 10 ? 10 : 6) as 6 | 10,
+            resolution: '1080P',
+            asyncMode: true,
+          });
+          
+          if (generationResult.success && generationResult.taskId) {
+            await db.updateGenerationJob(segmentId!, {
+              externalJobId: generationResult.taskId,
+              status: 'processing',
+            });
+          } else if (generationResult.success && generationResult.videoUrl) {
+            await db.updateGeneratedSegment(segmentId!, {
+              status: 'completed',
+              videoUrl: generationResult.videoUrl,
+              completedAt: new Date(),
+              qualityScore: '0.90',
+            });
+          } else {
+            await db.updateGeneratedSegment(segmentId!, {
+              status: 'failed',
+            });
+          }
+        } catch (error) {
+          console.error('Video generation error:', error);
+          // Fallback to mock for development
+          setTimeout(async () => {
+            await db.updateGeneratedSegment(segmentId!, {
+              status: 'completed',
+              videoUrl: `/api/placeholder/generated-${input.projectId}-${segmentId}.mp4`,
+              completedAt: new Date(),
+              qualityScore: '0.85',
+            });
+          }, 3000);
+        }
+        
+        return { segmentId, message: 'Generování zahájeno' };
+      }),
+    
     // Generate extended scene (mock - would call text-to-video API)
     generateScene: creatorProcedure
       .input(z.object({

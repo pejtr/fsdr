@@ -135,3 +135,8 @@
 - [x] Kategorie a tagy pro TG/TF obsah
 - [x] UI pro výběr šablon v Video Recreate Studiu
 - [x] Změna textu "tisícům" na "k mnoha" a nadpisu na "Připraven začít vydělávat svou vášní?"
+
+## Vylepšení šablon a galerie
+- [x] Náhledové obrázky pro každou TG/TF šablonu (12 obrázků)
+- [x] Automatické generování scénářů z vybraných šablon
+- [x] Galerie hotových videí pro inspiraci uživatelů
