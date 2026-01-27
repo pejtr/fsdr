@@ -672,6 +672,186 @@ export const appRouter = router({
       }),
   }),
 
+  // YouTube Integration
+  youtube: router({
+    // Connect YouTube channel via channel URL
+    connectByUrl: creatorProcedure
+      .input(z.object({ channelUrl: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        // Extract channel ID from URL
+        const channelIdMatch = input.channelUrl.match(/(?:channel\/|@)([a-zA-Z0-9_-]+)/);
+        if (!channelIdMatch) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid YouTube channel URL' });
+        }
+        
+        const channelId = channelIdMatch[1];
+        
+        // Check if already connected
+        const existing = await db.getYoutubeChannelByUserId(ctx.user.id);
+        if (existing) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'YouTube channel already connected' });
+        }
+        
+        // Create channel record (in real app, would fetch channel info from YouTube API)
+        const id = await db.createYoutubeChannel({
+          userId: ctx.user.id,
+          channelId,
+          channelTitle: `Channel ${channelId}`,
+          isConnected: true,
+        });
+        
+        return { channelId: id, message: 'Channel connected. Use OAuth for full access.' };
+      }),
+    
+    // Get connected channel info
+    getChannel: creatorProcedure.query(async ({ ctx }) => {
+      return db.getYoutubeChannelByUserId(ctx.user.id);
+    }),
+    
+    // Disconnect YouTube channel
+    disconnect: creatorProcedure.mutation(async ({ ctx }) => {
+      const channel = await db.getYoutubeChannelByUserId(ctx.user.id);
+      if (!channel) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'No YouTube channel connected' });
+      }
+      await db.disconnectYoutubeChannel(channel.id);
+      return { success: true };
+    }),
+    
+    // Import videos from YouTube channel (mock - in real app would use YouTube API)
+    importVideos: creatorProcedure.mutation(async ({ ctx }) => {
+      const channel = await db.getYoutubeChannelByUserId(ctx.user.id);
+      if (!channel) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'No YouTube channel connected' });
+      }
+      
+      // Mock import - in real app would fetch from YouTube Data API
+      const mockVideos = [
+        { id: `yt_${nanoid(11)}`, title: 'Sample Video 1', views: 1000, likes: 50 },
+        { id: `yt_${nanoid(11)}`, title: 'Sample Video 2', views: 2500, likes: 120 },
+        { id: `yt_${nanoid(11)}`, title: 'Sample Video 3', views: 5000, likes: 300 },
+      ];
+      
+      let imported = 0;
+      for (const video of mockVideos) {
+        const existing = await db.getYoutubeVideoByYtId(video.id);
+        if (!existing) {
+          await db.createYoutubeVideo({
+            channelId: channel.id,
+            youtubeVideoId: video.id,
+            title: video.title,
+            ytViewCount: video.views,
+            ytLikeCount: video.likes,
+            publishedAt: new Date(),
+          });
+          imported++;
+        }
+      }
+      
+      // Update channel stats
+      await db.updateYoutubeChannel(channel.id, {
+        videoCount: (channel.videoCount || 0) + imported,
+        lastSyncedAt: new Date(),
+      });
+      
+      return { imported, message: `Imported ${imported} videos` };
+    }),
+    
+    // Get imported YouTube videos
+    getVideos: creatorProcedure
+      .input(z.object({ limit: z.number().default(50), offset: z.number().default(0) }))
+      .query(async ({ ctx, input }) => {
+        const channel = await db.getYoutubeChannelByUserId(ctx.user.id);
+        if (!channel) return [];
+        return db.getYoutubeVideosByChannel(channel.id, input.limit, input.offset);
+      }),
+    
+    // Link extended version to YouTube video
+    linkExtended: creatorProcedure
+      .input(z.object({ youtubeVideoId: z.number(), extendedVideoId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        // Verify ownership
+        const channel = await db.getYoutubeChannelByUserId(ctx.user.id);
+        if (!channel) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'No YouTube channel connected' });
+        }
+        
+        await db.linkExtendedVideo(input.youtubeVideoId, input.extendedVideoId);
+        return { success: true };
+      }),
+    
+    // Get overview stats
+    getStats: creatorProcedure.query(async ({ ctx }) => {
+      return db.getYoutubeOverviewStats(ctx.user.id);
+    }),
+    
+    // Get video stats history for graphs
+    getVideoStatsHistory: creatorProcedure
+      .input(z.object({ youtubeVideoId: z.number(), days: z.number().default(30) }))
+      .query(async ({ input }) => {
+        return db.getYoutubeVideoStatsHistory(input.youtubeVideoId, input.days);
+      }),
+    
+    // Get channel stats history for graphs
+    getChannelStatsHistory: creatorProcedure
+      .input(z.object({ days: z.number().default(30) }))
+      .query(async ({ ctx, input }) => {
+        const channel = await db.getYoutubeChannelByUserId(ctx.user.id);
+        if (!channel) return [];
+        return db.getYoutubeChannelStatsHistory(channel.id, input.days);
+      }),
+    
+    // Generate AI thumbnail variants
+    generateThumbnails: creatorProcedure
+      .input(z.object({ youtubeVideoId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        // In real app, would call AI image generation API
+        const variants = [];
+        for (let i = 1; i <= 3; i++) {
+          const id = await db.createThumbnailVariant({
+            youtubeVideoId: input.youtubeVideoId,
+            variantNumber: i,
+            imageUrl: `/api/placeholder/thumbnail-${input.youtubeVideoId}-v${i}.jpg`,
+            prompt: `AI generated thumbnail variant ${i}`,
+            isActive: false,
+          });
+          variants.push({ id, variantNumber: i });
+        }
+        return { variants, message: 'Generated 3 thumbnail variants' };
+      }),
+    
+    // Get thumbnail variants for a video
+    getThumbnailVariants: creatorProcedure
+      .input(z.object({ youtubeVideoId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getThumbnailVariants(input.youtubeVideoId);
+      }),
+    
+    // Set active thumbnail variant for A/B testing
+    setActiveThumbnail: creatorProcedure
+      .input(z.object({ variantId: z.number(), youtubeVideoId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.setThumbnailWinner(input.youtubeVideoId, input.variantId);
+        return { success: true };
+      }),
+    
+    // Record thumbnail impression (for A/B testing)
+    recordImpression: publicProcedure
+      .input(z.object({ variantId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.incrementThumbnailImpressions(input.variantId);
+        return { success: true };
+      }),
+    
+    // Record thumbnail click (for A/B testing)
+    recordClick: publicProcedure
+      .input(z.object({ variantId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.incrementThumbnailClicks(input.variantId);
+        return { success: true };
+      }),
+  }),
+
   // Admin/Moderation
   admin: router({
     pendingVideos: adminProcedure.query(async () => {

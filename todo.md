@@ -69,3 +69,15 @@
 
 ## Hero Sekce Grafika
 - [x] Přidat grafiku do hero sekce na landing page
+
+## YouTube Integrace
+- [x] Databázové schéma pro YouTube kanály a importovaná videa
+- [x] Google/YouTube OAuth přihlašování (připraveno)
+- [x] Import videí z YouTube kanálu (vložením odkazu)
+- [x] Import miniatur a metadat (název, popis, tagy)
+- [x] Synchronizace statistik z YouTube
+- [x] Pokročilé statistiky a grafy (lepší než YouTube)
+- [x] AI generování miniatur (3 varianty návrhů)
+- [x] A/B testování miniatur s měřením proklikovosti
+- [x] Stránka pro správu YouTube kanálu a importu
+- [x] Propojení YouTube videí s rozšířenými verzemi na FEMSIDER

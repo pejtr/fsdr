@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet, Youtube } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
@@ -110,6 +110,14 @@ export default function Header() {
                       Výplaty
                     </DropdownMenuItem>
                   </Link>
+                  {user?.role === 'creator' && (
+                    <Link href="/youtube-studio">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Youtube className="mr-2 h-4 w-4 text-red-500" />
+                        YouTube Studio
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
                   <Link href="/settings">
                     <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />

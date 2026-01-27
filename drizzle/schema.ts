@@ -249,3 +249,106 @@ export const paymentSettings = mysqlTable("paymentSettings", {
 
 export type PaymentSetting = typeof paymentSettings.$inferSelect;
 export type InsertPaymentSetting = typeof paymentSettings.$inferInsert;
+
+
+// YouTube channels linked to creators
+export const youtubeChannels = mysqlTable("youtubeChannels", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  channelId: varchar("channelId", { length: 64 }).notNull().unique(), // YouTube channel ID
+  channelTitle: varchar("channelTitle", { length: 255 }),
+  channelDescription: text("channelDescription"),
+  channelThumbnail: text("channelThumbnail"),
+  subscriberCount: int("subscriberCount").default(0),
+  videoCount: int("videoCount").default(0),
+  viewCount: int("viewCount").default(0),
+  accessToken: text("accessToken"), // encrypted OAuth token
+  refreshToken: text("refreshToken"), // encrypted refresh token
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  isConnected: boolean("isConnected").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type YoutubeChannel = typeof youtubeChannels.$inferSelect;
+export type InsertYoutubeChannel = typeof youtubeChannels.$inferInsert;
+
+// YouTube videos imported
+export const youtubeVideos = mysqlTable("youtubeVideos", {
+  id: int("id").autoincrement().primaryKey(),
+  channelId: int("channelId").notNull(), // FK to youtubeChannels
+  youtubeVideoId: varchar("youtubeVideoId", { length: 32 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  thumbnailUrl: text("thumbnailUrl"),
+  duration: int("duration"), // in seconds
+  publishedAt: timestamp("publishedAt"),
+  // YouTube stats
+  ytViewCount: int("ytViewCount").default(0),
+  ytLikeCount: int("ytLikeCount").default(0),
+  ytCommentCount: int("ytCommentCount").default(0),
+  // FEMSIDER extended version link
+  extendedVideoId: int("extendedVideoId"), // FK to videos table (extended/uncensored version)
+  // Thumbnail A/B testing
+  currentThumbnailVariant: int("currentThumbnailVariant").default(0), // 0 = original, 1-3 = AI variants
+  // Status
+  isImported: boolean("isImported").default(true),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type YoutubeVideo = typeof youtubeVideos.$inferSelect;
+export type InsertYoutubeVideo = typeof youtubeVideos.$inferInsert;
+
+// YouTube video stats history (for graphs)
+export const youtubeVideoStats = mysqlTable("youtubeVideoStats", {
+  id: int("id").autoincrement().primaryKey(),
+  youtubeVideoId: int("youtubeVideoId").notNull(), // FK to youtubeVideos
+  viewCount: int("viewCount").default(0),
+  likeCount: int("likeCount").default(0),
+  commentCount: int("commentCount").default(0),
+  // CTR and engagement metrics
+  impressions: int("impressions").default(0),
+  ctr: decimal("ctr", { precision: 5, scale: 2 }), // Click-through rate
+  avgViewDuration: int("avgViewDuration"), // in seconds
+  avgViewPercentage: decimal("avgViewPercentage", { precision: 5, scale: 2 }),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+});
+
+export type YoutubeVideoStat = typeof youtubeVideoStats.$inferSelect;
+export type InsertYoutubeVideoStat = typeof youtubeVideoStats.$inferInsert;
+
+// AI-generated thumbnail variants for A/B testing
+export const thumbnailVariants = mysqlTable("thumbnailVariants", {
+  id: int("id").autoincrement().primaryKey(),
+  youtubeVideoId: int("youtubeVideoId").notNull(), // FK to youtubeVideos
+  variantNumber: int("variantNumber").notNull(), // 1, 2, 3
+  imageUrl: text("imageUrl").notNull(),
+  prompt: text("prompt"), // AI prompt used to generate
+  // A/B test stats
+  impressions: int("impressions").default(0),
+  clicks: int("clicks").default(0),
+  ctr: decimal("ctr", { precision: 5, scale: 2 }), // calculated CTR
+  isActive: boolean("isActive").default(false),
+  isWinner: boolean("isWinner").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ThumbnailVariant = typeof thumbnailVariants.$inferSelect;
+export type InsertThumbnailVariant = typeof thumbnailVariants.$inferInsert;
+
+// YouTube channel stats history (for graphs)
+export const youtubeChannelStats = mysqlTable("youtubeChannelStats", {
+  id: int("id").autoincrement().primaryKey(),
+  channelId: int("channelId").notNull(), // FK to youtubeChannels
+  subscriberCount: int("subscriberCount").default(0),
+  videoCount: int("videoCount").default(0),
+  viewCount: int("viewCount").default(0),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+});
+
+export type YoutubeChannelStat = typeof youtubeChannelStats.$inferSelect;
+export type InsertYoutubeChannelStat = typeof youtubeChannelStats.$inferInsert;

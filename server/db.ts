@@ -1072,3 +1072,210 @@ export async function getAvailableBalance(userId: number) {
     available: totalEarnings - pendingPayouts - paidOut,
   };
 }
+
+
+// ============ YOUTUBE INTEGRATION FUNCTIONS ============
+
+import { 
+  youtubeChannels, InsertYoutubeChannel, YoutubeChannel,
+  youtubeVideos, InsertYoutubeVideo, YoutubeVideo,
+  youtubeVideoStats, InsertYoutubeVideoStat,
+  youtubeChannelStats, InsertYoutubeChannelStat,
+  thumbnailVariants, InsertThumbnailVariant
+} from "../drizzle/schema";
+
+// YouTube Channel functions
+export async function createYoutubeChannel(channel: InsertYoutubeChannel) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(youtubeChannels).values(channel);
+  return result[0].insertId;
+}
+
+export async function getYoutubeChannelByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(youtubeChannels)
+    .where(eq(youtubeChannels.userId, userId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getYoutubeChannelById(channelId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(youtubeChannels)
+    .where(eq(youtubeChannels.channelId, channelId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateYoutubeChannel(id: number, data: Partial<InsertYoutubeChannel>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(youtubeChannels).set({ ...data, updatedAt: new Date() }).where(eq(youtubeChannels.id, id));
+}
+
+export async function disconnectYoutubeChannel(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(youtubeChannels).set({ 
+    isConnected: false, 
+    accessToken: null, 
+    refreshToken: null,
+    updatedAt: new Date() 
+  }).where(eq(youtubeChannels.id, id));
+}
+
+// YouTube Video functions
+export async function createYoutubeVideo(video: InsertYoutubeVideo) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(youtubeVideos).values(video);
+  return result[0].insertId;
+}
+
+export async function getYoutubeVideosByChannel(channelId: number, limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(youtubeVideos)
+    .where(eq(youtubeVideos.channelId, channelId))
+    .orderBy(desc(youtubeVideos.publishedAt))
+    .limit(limit).offset(offset);
+}
+
+export async function getYoutubeVideoByYtId(youtubeVideoId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(youtubeVideos)
+    .where(eq(youtubeVideos.youtubeVideoId, youtubeVideoId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateYoutubeVideo(id: number, data: Partial<InsertYoutubeVideo>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(youtubeVideos).set({ ...data, updatedAt: new Date() }).where(eq(youtubeVideos.id, id));
+}
+
+export async function linkExtendedVideo(youtubeVideoId: number, extendedVideoId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(youtubeVideos).set({ extendedVideoId, updatedAt: new Date() }).where(eq(youtubeVideos.id, youtubeVideoId));
+}
+
+// YouTube Stats functions
+export async function recordYoutubeVideoStats(stats: InsertYoutubeVideoStat) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(youtubeVideoStats).values(stats);
+  return result[0].insertId;
+}
+
+export async function getYoutubeVideoStatsHistory(youtubeVideoId: number, days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  
+  return db.select().from(youtubeVideoStats)
+    .where(and(
+      eq(youtubeVideoStats.youtubeVideoId, youtubeVideoId),
+      sql`${youtubeVideoStats.recordedAt} >= ${cutoffDate}`
+    ))
+    .orderBy(youtubeVideoStats.recordedAt);
+}
+
+export async function recordYoutubeChannelStats(stats: InsertYoutubeChannelStat) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(youtubeChannelStats).values(stats);
+  return result[0].insertId;
+}
+
+export async function getYoutubeChannelStatsHistory(channelId: number, days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  
+  return db.select().from(youtubeChannelStats)
+    .where(and(
+      eq(youtubeChannelStats.channelId, channelId),
+      sql`${youtubeChannelStats.recordedAt} >= ${cutoffDate}`
+    ))
+    .orderBy(youtubeChannelStats.recordedAt);
+}
+
+// Thumbnail A/B Testing functions
+export async function createThumbnailVariant(variant: InsertThumbnailVariant) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(thumbnailVariants).values(variant);
+  return result[0].insertId;
+}
+
+export async function getThumbnailVariants(youtubeVideoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(thumbnailVariants)
+    .where(eq(thumbnailVariants.youtubeVideoId, youtubeVideoId))
+    .orderBy(thumbnailVariants.variantNumber);
+}
+
+export async function updateThumbnailVariant(id: number, data: Partial<InsertThumbnailVariant>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(thumbnailVariants).set({ ...data, updatedAt: new Date() }).where(eq(thumbnailVariants.id, id));
+}
+
+export async function incrementThumbnailImpressions(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(thumbnailVariants).set({ 
+    impressions: sql`${thumbnailVariants.impressions} + 1` 
+  }).where(eq(thumbnailVariants.id, id));
+}
+
+export async function incrementThumbnailClicks(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(thumbnailVariants).set({ 
+    clicks: sql`${thumbnailVariants.clicks} + 1`,
+    ctr: sql`ROUND((${thumbnailVariants.clicks} + 1) / NULLIF(${thumbnailVariants.impressions}, 0) * 100, 2)`
+  }).where(eq(thumbnailVariants.id, id));
+}
+
+export async function setThumbnailWinner(youtubeVideoId: number, variantId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Reset all variants for this video
+  await db.update(thumbnailVariants).set({ isWinner: false, isActive: false })
+    .where(eq(thumbnailVariants.youtubeVideoId, youtubeVideoId));
+  // Set the winner
+  await db.update(thumbnailVariants).set({ isWinner: true, isActive: true })
+    .where(eq(thumbnailVariants.id, variantId));
+}
+
+// Get aggregated YouTube stats for a user
+export async function getYoutubeOverviewStats(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const channel = await getYoutubeChannelByUserId(userId);
+  if (!channel) return null;
+  
+  const videosResult = await db.select({
+    totalVideos: sql<number>`COUNT(*)`,
+    totalViews: sql<number>`COALESCE(SUM(${youtubeVideos.ytViewCount}), 0)`,
+    totalLikes: sql<number>`COALESCE(SUM(${youtubeVideos.ytLikeCount}), 0)`,
+    totalComments: sql<number>`COALESCE(SUM(${youtubeVideos.ytCommentCount}), 0)`,
+    linkedVideos: sql<number>`SUM(CASE WHEN ${youtubeVideos.extendedVideoId} IS NOT NULL THEN 1 ELSE 0 END)`
+  }).from(youtubeVideos).where(eq(youtubeVideos.channelId, channel.id));
+  
+  return {
+    channel,
+    stats: videosResult[0]
+  };
+}

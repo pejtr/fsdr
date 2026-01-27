@@ -15,6 +15,7 @@ import AgeVerification from "./pages/AgeVerification";
 import Settings from "./pages/Settings";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import PayoutSettings from "./pages/PayoutSettings";
+import YouTubeStudio from "./pages/YouTubeStudio";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
           <Route path="/settings" component={Settings} />
           <Route path="/affiliate" component={AffiliateDashboard} />
           <Route path="/payouts" component={PayoutSettings} />
+          <Route path="/youtube-studio" component={YouTubeStudio} />
         </>
       )}
       
