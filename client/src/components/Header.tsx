@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
@@ -102,6 +102,12 @@ export default function Header() {
                     <DropdownMenuItem className="cursor-pointer">
                       <Users className="mr-2 h-4 w-4" />
                       Affiliate program
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/payouts">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Výplaty
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/settings">

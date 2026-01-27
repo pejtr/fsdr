@@ -166,3 +166,86 @@ export const userBadges = mysqlTable("userBadges", {
 
 export type UserBadge = typeof userBadges.$inferSelect;
 export type InsertUserBadge = typeof userBadges.$inferInsert;
+
+
+// UTM tracking for affiliate links
+export const affiliateClicks = mysqlTable("affiliateClicks", {
+  id: int("id").autoincrement().primaryKey(),
+  affiliateCode: varchar("affiliateCode", { length: 32 }).notNull(),
+  utmSource: varchar("utmSource", { length: 64 }), // e.g., twitter, facebook, instagram
+  utmMedium: varchar("utmMedium", { length: 64 }), // e.g., social, banner, qr
+  utmCampaign: varchar("utmCampaign", { length: 128 }), // e.g., summer_promo
+  utmContent: varchar("utmContent", { length: 128 }), // e.g., banner_v1, banner_v2
+  ipHash: varchar("ipHash", { length: 64 }), // hashed IP for unique visitor tracking
+  userAgent: text("userAgent"),
+  referer: text("referer"),
+  convertedToSignup: boolean("convertedToSignup").default(false),
+  convertedToSubscription: boolean("convertedToSubscription").default(false),
+  convertedUserId: int("convertedUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AffiliateClick = typeof affiliateClicks.$inferSelect;
+export type InsertAffiliateClick = typeof affiliateClicks.$inferInsert;
+
+// A/B testing for banners
+export const bannerVariants = mysqlTable("bannerVariants", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  description: text("description"),
+  imageUrl: text("imageUrl").notNull(),
+  size: varchar("size", { length: 32 }).notNull(), // e.g., 728x90, 300x250
+  isActive: boolean("isActive").default(true),
+  impressions: int("impressions").default(0),
+  clicks: int("clicks").default(0),
+  conversions: int("conversions").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BannerVariant = typeof bannerVariants.$inferSelect;
+export type InsertBannerVariant = typeof bannerVariants.$inferInsert;
+
+// Payout requests
+export const payoutRequests = mysqlTable("payoutRequests", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  paymentMethod: mysqlEnum("paymentMethod", ["paypal", "bank_transfer", "crypto"]).notNull(),
+  paymentDetails: text("paymentDetails"), // JSON with payment info (encrypted)
+  status: mysqlEnum("status", ["pending", "processing", "completed", "rejected"]).default("pending"),
+  processedAt: timestamp("processedAt"),
+  processedBy: int("processedBy"),
+  rejectionReason: text("rejectionReason"),
+  transactionId: varchar("transactionId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PayoutRequest = typeof payoutRequests.$inferSelect;
+export type InsertPayoutRequest = typeof payoutRequests.$inferInsert;
+
+// User payment settings
+export const paymentSettings = mysqlTable("paymentSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  preferredMethod: mysqlEnum("preferredMethod", ["paypal", "bank_transfer", "crypto"]).default("paypal"),
+  paypalEmail: varchar("paypalEmail", { length: 320 }),
+  bankAccountName: varchar("bankAccountName", { length: 128 }),
+  bankAccountNumber: varchar("bankAccountNumber", { length: 64 }),
+  bankRoutingNumber: varchar("bankRoutingNumber", { length: 32 }),
+  bankName: varchar("bankName", { length: 128 }),
+  bankSwift: varchar("bankSwift", { length: 16 }),
+  bankIban: varchar("bankIban", { length: 64 }),
+  cryptoWalletAddress: varchar("cryptoWalletAddress", { length: 128 }),
+  cryptoCurrency: varchar("cryptoCurrency", { length: 16 }), // BTC, ETH, USDT
+  minimumPayout: decimal("minimumPayout", { precision: 10, scale: 2 }).default("50.00"),
+  autoPayoutEnabled: boolean("autoPayoutEnabled").default(false),
+  autoPayoutThreshold: decimal("autoPayoutThreshold", { precision: 10, scale: 2 }).default("100.00"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentSetting = typeof paymentSettings.$inferSelect;
+export type InsertPaymentSetting = typeof paymentSettings.$inferInsert;

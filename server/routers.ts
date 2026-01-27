@@ -444,6 +444,234 @@ export const appRouter = router({
       }),
   }),
 
+  // UTM Tracking
+  tracking: router({
+    trackClick: publicProcedure
+      .input(z.object({
+        affiliateCode: z.string(),
+        utmSource: z.string().optional(),
+        utmMedium: z.string().optional(),
+        utmCampaign: z.string().optional(),
+        utmContent: z.string().optional(),
+        referer: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const ip = ctx.req.headers['x-forwarded-for'] as string || ctx.req.socket?.remoteAddress || 'unknown';
+        const ipHash = db.hashIP(ip);
+        const userAgent = ctx.req.headers['user-agent'] as string || '';
+        
+        await db.trackAffiliateClick({
+          affiliateCode: input.affiliateCode,
+          utmSource: input.utmSource || null,
+          utmMedium: input.utmMedium || null,
+          utmCampaign: input.utmCampaign || null,
+          utmContent: input.utmContent || null,
+          ipHash,
+          userAgent,
+          referer: input.referer || null,
+        });
+        
+        return { success: true };
+      }),
+    
+    getClickStats: protectedProcedure.query(async ({ ctx }) => {
+      const user = await db.getUserById(ctx.user.id);
+      if (!user?.affiliateCode) return null;
+      return db.getAffiliateClickStats(user.affiliateCode);
+    }),
+    
+    getClicksBySource: protectedProcedure.query(async ({ ctx }) => {
+      const user = await db.getUserById(ctx.user.id);
+      if (!user?.affiliateCode) return [];
+      return db.getAffiliateClicksBySource(user.affiliateCode);
+    }),
+    
+    getClicksByCampaign: protectedProcedure.query(async ({ ctx }) => {
+      const user = await db.getUserById(ctx.user.id);
+      if (!user?.affiliateCode) return [];
+      return db.getAffiliateClicksByCampaign(user.affiliateCode);
+    }),
+  }),
+
+  // A/B Testing for Banners
+  banners: router({
+    list: publicProcedure
+      .input(z.object({ size: z.string().optional() }))
+      .query(async ({ input }) => {
+        return db.getBannerVariants(input.size);
+      }),
+    
+    getStats: protectedProcedure.query(async () => {
+      return db.getBannerStats();
+    }),
+    
+    trackImpression: publicProcedure
+      .input(z.object({ bannerId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.incrementBannerImpression(input.bannerId);
+        return { success: true };
+      }),
+    
+    trackClick: publicProcedure
+      .input(z.object({ bannerId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.incrementBannerClick(input.bannerId);
+        return { success: true };
+      }),
+    
+    create: adminProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        imageUrl: z.string(),
+        size: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.createBannerVariant(input);
+        return { id };
+      }),
+    
+    update: adminProcedure
+      .input(z.object({
+        bannerId: z.number(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        imageUrl: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { bannerId, ...data } = input;
+        await db.updateBannerVariant(bannerId, data);
+        return { success: true };
+      }),
+    
+    delete: adminProcedure
+      .input(z.object({ bannerId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteBannerVariant(input.bannerId);
+        return { success: true };
+      }),
+    
+    listAll: adminProcedure.query(async () => {
+      return db.getAllBannerVariants();
+    }),
+  }),
+
+  // Payout System
+  payout: router({
+    getBalance: protectedProcedure.query(async ({ ctx }) => {
+      return db.getAvailableBalance(ctx.user.id);
+    }),
+    
+    getSettings: protectedProcedure.query(async ({ ctx }) => {
+      return db.getPaymentSettings(ctx.user.id);
+    }),
+    
+    updateSettings: protectedProcedure
+      .input(z.object({
+        preferredMethod: z.enum(["paypal", "bank_transfer", "crypto"]).optional(),
+        paypalEmail: z.string().email().optional().nullable(),
+        bankAccountName: z.string().optional().nullable(),
+        bankAccountNumber: z.string().optional().nullable(),
+        bankRoutingNumber: z.string().optional().nullable(),
+        bankName: z.string().optional().nullable(),
+        bankSwift: z.string().optional().nullable(),
+        bankIban: z.string().optional().nullable(),
+        cryptoWalletAddress: z.string().optional().nullable(),
+        cryptoCurrency: z.string().optional().nullable(),
+        minimumPayout: z.string().optional(),
+        autoPayoutEnabled: z.boolean().optional(),
+        autoPayoutThreshold: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.upsertPaymentSettings(ctx.user.id, input);
+        return { success: true };
+      }),
+    
+    requestPayout: protectedProcedure
+      .input(z.object({
+        amount: z.number().min(10),
+        paymentMethod: z.enum(["paypal", "bank_transfer", "crypto"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check available balance
+        const balance = await db.getAvailableBalance(ctx.user.id);
+        if (balance.available < input.amount) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient balance' });
+        }
+        
+        // Check minimum payout
+        const settings = await db.getPaymentSettings(ctx.user.id);
+        const minPayout = parseFloat(settings?.minimumPayout || "50");
+        if (input.amount < minPayout) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: `Minimum payout is $${minPayout}` });
+        }
+        
+        // Check payment details are set
+        if (input.paymentMethod === 'paypal' && !settings?.paypalEmail) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'PayPal email not set' });
+        }
+        if (input.paymentMethod === 'bank_transfer' && !settings?.bankAccountNumber) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Bank account not set' });
+        }
+        if (input.paymentMethod === 'crypto' && !settings?.cryptoWalletAddress) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Crypto wallet not set' });
+        }
+        
+        const payoutId = await db.createPayoutRequest({
+          userId: ctx.user.id,
+          amount: input.amount.toString(),
+          paymentMethod: input.paymentMethod,
+          status: 'pending',
+        });
+        
+        return { payoutId };
+      }),
+    
+    getMyRequests: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserPayoutRequests(ctx.user.id);
+    }),
+    
+    // Admin endpoints
+    getAllRequests: adminProcedure
+      .input(z.object({ status: z.enum(["pending", "processing", "completed", "rejected"]).optional() }))
+      .query(async ({ input }) => {
+        return db.getAllPayoutRequests(input.status);
+      }),
+    
+    processRequest: adminProcedure
+      .input(z.object({
+        payoutId: z.number(),
+        action: z.enum(["approve", "reject", "complete"]),
+        rejectionReason: z.string().optional(),
+        transactionId: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        let status: 'processing' | 'completed' | 'rejected';
+        switch (input.action) {
+          case 'approve':
+            status = 'processing';
+            break;
+          case 'complete':
+            status = 'completed';
+            break;
+          case 'reject':
+            status = 'rejected';
+            break;
+        }
+        
+        await db.updatePayoutRequest(
+          input.payoutId,
+          status,
+          ctx.user.id,
+          input.rejectionReason,
+          input.transactionId
+        );
+        
+        return { success: true };
+      }),
+  }),
+
   // Admin/Moderation
   admin: router({
     pendingVideos: adminProcedure.query(async () => {

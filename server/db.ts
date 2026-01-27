@@ -775,3 +775,300 @@ export async function getDirectReferrals(userId: number) {
   
   return enriched;
 }
+
+
+// ============ UTM TRACKING FUNCTIONS ============
+
+import { affiliateClicks, bannerVariants, payoutRequests, paymentSettings, InsertAffiliateClick, InsertBannerVariant, InsertPayoutRequest, InsertPaymentSetting } from "../drizzle/schema";
+import crypto from 'crypto';
+
+export async function trackAffiliateClick(data: InsertAffiliateClick) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(affiliateClicks).values(data);
+  return result[0].insertId;
+}
+
+export async function getAffiliateClickStats(affiliateCode: string) {
+  const db = await getDb();
+  if (!db) return { totalClicks: 0, uniqueClicks: 0, signups: 0, subscriptions: 0 };
+  
+  const stats = await db.select({
+    totalClicks: sql<number>`COUNT(*)`,
+    uniqueClicks: sql<number>`COUNT(DISTINCT ${affiliateClicks.ipHash})`,
+    signups: sql<number>`SUM(CASE WHEN ${affiliateClicks.convertedToSignup} = true THEN 1 ELSE 0 END)`,
+    subscriptions: sql<number>`SUM(CASE WHEN ${affiliateClicks.convertedToSubscription} = true THEN 1 ELSE 0 END)`,
+  })
+    .from(affiliateClicks)
+    .where(eq(affiliateClicks.affiliateCode, affiliateCode));
+  
+  return {
+    totalClicks: stats[0]?.totalClicks ?? 0,
+    uniqueClicks: stats[0]?.uniqueClicks ?? 0,
+    signups: stats[0]?.signups ?? 0,
+    subscriptions: stats[0]?.subscriptions ?? 0,
+  };
+}
+
+export async function getAffiliateClicksBySource(affiliateCode: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    source: affiliateClicks.utmSource,
+    medium: affiliateClicks.utmMedium,
+    clicks: sql<number>`COUNT(*)`,
+    uniqueClicks: sql<number>`COUNT(DISTINCT ${affiliateClicks.ipHash})`,
+    signups: sql<number>`SUM(CASE WHEN ${affiliateClicks.convertedToSignup} = true THEN 1 ELSE 0 END)`,
+    subscriptions: sql<number>`SUM(CASE WHEN ${affiliateClicks.convertedToSubscription} = true THEN 1 ELSE 0 END)`,
+  })
+    .from(affiliateClicks)
+    .where(eq(affiliateClicks.affiliateCode, affiliateCode))
+    .groupBy(affiliateClicks.utmSource, affiliateClicks.utmMedium)
+    .orderBy(desc(sql`COUNT(*)`));
+}
+
+export async function getAffiliateClicksByCampaign(affiliateCode: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    campaign: affiliateClicks.utmCampaign,
+    content: affiliateClicks.utmContent,
+    clicks: sql<number>`COUNT(*)`,
+    uniqueClicks: sql<number>`COUNT(DISTINCT ${affiliateClicks.ipHash})`,
+    signups: sql<number>`SUM(CASE WHEN ${affiliateClicks.convertedToSignup} = true THEN 1 ELSE 0 END)`,
+    subscriptions: sql<number>`SUM(CASE WHEN ${affiliateClicks.convertedToSubscription} = true THEN 1 ELSE 0 END)`,
+  })
+    .from(affiliateClicks)
+    .where(eq(affiliateClicks.affiliateCode, affiliateCode))
+    .groupBy(affiliateClicks.utmCampaign, affiliateClicks.utmContent)
+    .orderBy(desc(sql`COUNT(*)`));
+}
+
+export async function markClickAsConverted(affiliateCode: string, ipHash: string, type: 'signup' | 'subscription', userId?: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const updateData: Partial<InsertAffiliateClick> = type === 'signup' 
+    ? { convertedToSignup: true, convertedUserId: userId }
+    : { convertedToSubscription: true };
+  
+  await db.update(affiliateClicks)
+    .set(updateData)
+    .where(and(
+      eq(affiliateClicks.affiliateCode, affiliateCode),
+      eq(affiliateClicks.ipHash, ipHash)
+    ));
+}
+
+export function hashIP(ip: string): string {
+  return crypto.createHash('sha256').update(ip + 'femsider_salt').digest('hex').substring(0, 32);
+}
+
+// ============ A/B TESTING FUNCTIONS ============
+
+export async function createBannerVariant(banner: InsertBannerVariant) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(bannerVariants).values(banner);
+  return result[0].insertId;
+}
+
+export async function getBannerVariants(size?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (size) {
+    return db.select().from(bannerVariants)
+      .where(and(eq(bannerVariants.size, size), eq(bannerVariants.isActive, true)))
+      .orderBy(desc(bannerVariants.createdAt));
+  }
+  
+  return db.select().from(bannerVariants)
+    .where(eq(bannerVariants.isActive, true))
+    .orderBy(desc(bannerVariants.createdAt));
+}
+
+export async function getAllBannerVariants() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(bannerVariants).orderBy(desc(bannerVariants.createdAt));
+}
+
+export async function incrementBannerImpression(bannerId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bannerVariants)
+    .set({ impressions: sql`${bannerVariants.impressions} + 1` })
+    .where(eq(bannerVariants.id, bannerId));
+}
+
+export async function incrementBannerClick(bannerId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bannerVariants)
+    .set({ clicks: sql`${bannerVariants.clicks} + 1` })
+    .where(eq(bannerVariants.id, bannerId));
+}
+
+export async function incrementBannerConversion(bannerId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bannerVariants)
+    .set({ conversions: sql`${bannerVariants.conversions} + 1` })
+    .where(eq(bannerVariants.id, bannerId));
+}
+
+export async function getBannerStats() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    id: bannerVariants.id,
+    name: bannerVariants.name,
+    size: bannerVariants.size,
+    imageUrl: bannerVariants.imageUrl,
+    impressions: bannerVariants.impressions,
+    clicks: bannerVariants.clicks,
+    conversions: bannerVariants.conversions,
+    ctr: sql<string>`CASE WHEN ${bannerVariants.impressions} > 0 THEN ROUND(${bannerVariants.clicks} * 100.0 / ${bannerVariants.impressions}, 2) ELSE 0 END`,
+    conversionRate: sql<string>`CASE WHEN ${bannerVariants.clicks} > 0 THEN ROUND(${bannerVariants.conversions} * 100.0 / ${bannerVariants.clicks}, 2) ELSE 0 END`,
+  })
+    .from(bannerVariants)
+    .orderBy(desc(bannerVariants.clicks));
+}
+
+export async function updateBannerVariant(bannerId: number, data: Partial<InsertBannerVariant>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bannerVariants).set({ ...data, updatedAt: new Date() }).where(eq(bannerVariants.id, bannerId));
+}
+
+export async function deleteBannerVariant(bannerId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(bannerVariants).where(eq(bannerVariants.id, bannerId));
+}
+
+// ============ PAYOUT FUNCTIONS ============
+
+export async function createPayoutRequest(payout: InsertPayoutRequest) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(payoutRequests).values(payout);
+  return result[0].insertId;
+}
+
+export async function getUserPayoutRequests(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payoutRequests)
+    .where(eq(payoutRequests.userId, userId))
+    .orderBy(desc(payoutRequests.createdAt));
+}
+
+export async function getAllPayoutRequests(status?: 'pending' | 'processing' | 'completed' | 'rejected') {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (status) {
+    return db.select().from(payoutRequests)
+      .where(eq(payoutRequests.status, status))
+      .orderBy(desc(payoutRequests.createdAt));
+  }
+  
+  return db.select().from(payoutRequests).orderBy(desc(payoutRequests.createdAt));
+}
+
+export async function updatePayoutRequest(
+  payoutId: number, 
+  status: 'pending' | 'processing' | 'completed' | 'rejected',
+  processedBy?: number,
+  rejectionReason?: string,
+  transactionId?: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const updateData: Partial<InsertPayoutRequest> = {
+    status,
+    processedBy,
+    processedAt: status === 'completed' || status === 'rejected' ? new Date() : undefined,
+    rejectionReason,
+    transactionId,
+  };
+  
+  await db.update(payoutRequests).set(updateData).where(eq(payoutRequests.id, payoutId));
+}
+
+export async function getUserPendingPayoutTotal(userId: number) {
+  const db = await getDb();
+  if (!db) return "0";
+  
+  const result = await db.select({
+    total: sql<string>`COALESCE(SUM(${payoutRequests.amount}), 0)`
+  })
+    .from(payoutRequests)
+    .where(and(
+      eq(payoutRequests.userId, userId),
+      sql`${payoutRequests.status} IN ('pending', 'processing')`
+    ));
+  
+  return result[0]?.total ?? "0";
+}
+
+export async function getUserPaidOutTotal(userId: number) {
+  const db = await getDb();
+  if (!db) return "0";
+  
+  const result = await db.select({
+    total: sql<string>`COALESCE(SUM(${payoutRequests.amount}), 0)`
+  })
+    .from(payoutRequests)
+    .where(and(
+      eq(payoutRequests.userId, userId),
+      eq(payoutRequests.status, 'completed')
+    ));
+  
+  return result[0]?.total ?? "0";
+}
+
+// ============ PAYMENT SETTINGS FUNCTIONS ============
+
+export async function getPaymentSettings(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(paymentSettings)
+    .where(eq(paymentSettings.userId, userId))
+    .limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function upsertPaymentSettings(userId: number, settings: Partial<InsertPaymentSetting>) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const existing = await getPaymentSettings(userId);
+  
+  if (existing) {
+    await db.update(paymentSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(paymentSettings.userId, userId));
+  } else {
+    await db.insert(paymentSettings).values({ userId, ...settings });
+  }
+}
+
+export async function getAvailableBalance(userId: number) {
+  const totalEarnings = parseFloat(await getAffiliateTotalEarnings(userId));
+  const pendingPayouts = parseFloat(await getUserPendingPayoutTotal(userId));
+  const paidOut = parseFloat(await getUserPaidOutTotal(userId));
+  
+  return {
+    totalEarnings,
+    pendingPayouts,
+    paidOut,
+    available: totalEarnings - pendingPayouts - paidOut,
+  };
+}

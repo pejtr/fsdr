@@ -56,3 +56,13 @@
 - [x] Grafické bannery z poskytnutých obrázků (Yourfemalesideplatform.png, FEMSIDER.png)
 - [x] Sekce s přehledem všech odkazů a jejich výkonnosti
 - [x] Rozšířit text o "...for your VIP content"
+
+## UTM, A/B Testování a Výplaty
+- [x] UTM parametry pro affiliate odkazy (source, medium, campaign)
+- [x] Sledování a analýza UTM parametrů v dashboardu
+- [x] A/B testování bannerů s variantami
+- [x] Statistiky výkonnosti jednotlivých variant bannerů
+- [x] Systém pro výplatu provizí
+- [x] Nastavení platebních metod (PayPal, bankovní převod)
+- [x] Historie výplat a žádostí o výplatu
+- [x] Minimální částka pro výplatu

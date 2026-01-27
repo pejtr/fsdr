@@ -22,6 +22,13 @@
       "when": 1769470066484,
       "tag": "0002_stiff_warhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1769476415250,
+      "tag": "0003_lovely_cannonball",
+      "breakpoints": true
     }
   ]
 }
