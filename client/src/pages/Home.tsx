@@ -14,9 +14,17 @@ export default function Home() {
       
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl" />
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img 
+            src="/banners/banner-collage.png" 
+            alt="FEMSIDER" 
+            className="w-full h-full object-cover opacity-30"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+        </div>
+        {/* Glow effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/20 rounded-full blur-3xl" />
         
         <div className="container relative py-24 md:py-32">
           <div className="max-w-4xl mx-auto text-center">

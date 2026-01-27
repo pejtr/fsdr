@@ -66,3 +66,6 @@
 - [x] Nastavení platebních metod (PayPal, bankovní převod)
 - [x] Historie výplat a žádostí o výplatu
 - [x] Minimální částka pro výplatu
+
+## Hero Sekce Grafika
+- [x] Přidat grafiku do hero sekce na landing page
