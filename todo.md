@@ -106,3 +106,6 @@
 - [x] Generování 6s rozšířených scén
 - [x] UI pro Video Recreate Studio
 - [x] Možnost vytvořit remake nebo sequel videa
+
+## UI Vylepšení
+- [x] Hero sekce - zeslabit růžové záření a zesvětlit pozadí
