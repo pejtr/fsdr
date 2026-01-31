@@ -83,6 +83,7 @@ export default function Header() {
 
   const navLinks = [
     { href: "/browse", label: "Procházet" },
+    { href: "/gallery", label: "Galerie" },
     ...(isAuthenticated && user?.role === 'creator' ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(isAuthenticated ? [{ href: "/subscriptions", label: "Odběry" }] : []),
     ...(isAuthenticated ? [{ href: "/affiliate", label: "Affiliate" }] : []),
@@ -90,12 +91,12 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-[oklch(0.6_0.15_180)]/20">
       <div className="container">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/">
-            <span className="femsider-text-gradient font-bold text-2xl cursor-pointer">
+            <span className="symbiote-text-gradient font-bold text-2xl cursor-pointer">
               FEMSIDER
             </span>
           </Link>
@@ -124,7 +125,7 @@ export default function Header() {
                       <Bell className="h-5 w-5" />
                       {unreadCount > 0 && (
                         <Badge 
-                          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs femsider-gradient border-0"
+                          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs symbiote-gradient border-0"
                         >
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </Badge>
@@ -219,7 +220,7 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-primary/50">
+                    <Avatar className="h-10 w-10 border-2 border-[oklch(0.6_0.15_180)]/50 symbiote-glow">
                       <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name || ''} />
                       <AvatarFallback className="bg-primary/20 text-primary">
                         {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -312,7 +313,7 @@ export default function Header() {
               </DropdownMenu>
             ) : (
               <a href={getLoginUrl()}>
-                <Button className="femsider-gradient text-white border-0">
+                <Button className="symbiote-gradient text-white border-0">
                   Přihlásit se
                 </Button>
               </a>

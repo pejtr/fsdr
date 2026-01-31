@@ -71,7 +71,7 @@ export default function CreatorDashboard() {
           <h1 className="text-2xl font-bold mb-4">Přihlaste se</h1>
           <p className="text-muted-foreground mb-4">Pro přístup k dashboardu se musíte přihlásit.</p>
           <a href={getLoginUrl()}>
-            <Button className="femsider-gradient text-white border-0">Přihlásit se</Button>
+            <Button className="symbiote-gradient text-white border-0">Přihlásit se</Button>
           </a>
         </main>
       </div>
@@ -92,12 +92,12 @@ export default function CreatorDashboard() {
             </p>
             
             {!user?.isAgeVerified ? (
-              <div className="femsider-card p-6 mb-6">
+              <div className="symbiote-card p-6 mb-6">
                 <p className="text-muted-foreground mb-4">
                   Pro vytvoření účtu tvůrce musíte nejprve ověřit svůj věk.
                 </p>
                 <Link href="/verify-age">
-                  <Button className="femsider-gradient text-white border-0">
+                  <Button className="symbiote-gradient text-white border-0">
                     Ověřit věk
                   </Button>
                 </Link>
@@ -106,7 +106,7 @@ export default function CreatorDashboard() {
               <Button 
                 onClick={() => becomeCreatorMutation.mutate()}
                 disabled={becomeCreatorMutation.isPending}
-                className="femsider-gradient text-white border-0"
+                className="symbiote-gradient text-white border-0"
                 size="lg"
               >
                 Stát se tvůrcem
@@ -125,7 +125,7 @@ export default function CreatorDashboard() {
       <main className="container py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">
-            <span className="femsider-text-gradient">Dashboard</span> tvůrce
+            <span className="symbiote-text-gradient">Dashboard</span> tvůrce
           </h1>
           <UploadVideoDialog onSuccess={refetchVideos} />
         </div>
@@ -180,7 +180,7 @@ export default function CreatorDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 femsider-card">
+              <div className="text-center py-12 symbiote-card">
                 <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">Zatím nemáte žádná videa.</p>
                 <UploadVideoDialog onSuccess={refetchVideos} />
@@ -192,7 +192,7 @@ export default function CreatorDashboard() {
             {subscribers && subscribers.length > 0 ? (
               <div className="grid gap-4">
                 {subscribers.map((sub) => (
-                  <Card key={sub.id} className="femsider-card">
+                  <Card key={sub.id} className="symbiote-card">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div>
                         <p className="font-medium">Odběratel #{sub.subscriberId}</p>
@@ -209,7 +209,7 @@ export default function CreatorDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 femsider-card">
+              <div className="text-center py-12 symbiote-card">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">Zatím nemáte žádné odběratele.</p>
               </div>
@@ -218,7 +218,7 @@ export default function CreatorDashboard() {
           
           <TabsContent value="affiliate">
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Váš affiliate odkaz</CardTitle>
                 </CardHeader>
@@ -246,7 +246,7 @@ export default function CreatorDashboard() {
                 </CardContent>
               </Card>
               
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Affiliate statistiky</CardTitle>
                 </CardHeader>
@@ -278,7 +278,7 @@ function StatCard({ title, value, icon, trend }: {
   trend?: string;
 }) {
   return (
-    <Card className="femsider-card">
+    <Card className="symbiote-card">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-muted-foreground text-sm">{title}</span>
@@ -300,7 +300,7 @@ function StatCard({ title, value, icon, trend }: {
 
 function VideoRow({ video }: { video: any }) {
   return (
-    <Card className="femsider-card">
+    <Card className="symbiote-card">
       <CardContent className="p-4 flex items-center gap-4">
         <div className="w-32 h-20 bg-secondary rounded overflow-hidden flex-shrink-0">
           {video.thumbnailUrl ? (
@@ -381,7 +381,7 @@ function UploadVideoDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="femsider-gradient text-white border-0">
+        <Button className="symbiote-gradient text-white border-0">
           <Plus className="h-4 w-4 mr-2" />
           Nahrát video
         </Button>
@@ -449,7 +449,7 @@ function UploadVideoDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
           <Button 
             type="submit" 
-            className="w-full femsider-gradient text-white border-0"
+            className="w-full symbiote-gradient text-white border-0"
             disabled={createMutation.isPending}
           >
             {createMutation.isPending ? 'Nahrávám...' : 'Nahrát video'}

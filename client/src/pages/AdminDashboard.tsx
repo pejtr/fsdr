@@ -72,12 +72,12 @@ export default function AdminDashboard() {
       
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">
-          <span className="femsider-text-gradient">Admin</span> panel
+          <span className="symbiote-text-gradient">Admin</span> panel
         </h1>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="femsider-card">
+          <Card className="symbiote-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card className="femsider-card">
+          <Card className="symbiote-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
             {pendingVideos && pendingVideos.length > 0 ? (
               <div className="grid gap-4">
                 {pendingVideos.map((video) => (
-                  <Card key={video.id} className="femsider-card">
+                  <Card key={video.id} className="symbiote-card">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
                         <div className="w-40 h-24 bg-secondary rounded overflow-hidden flex-shrink-0">
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
             ) : (
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardContent className="p-8 text-center">
                   <Check className="h-12 w-12 mx-auto mb-4 text-green-500" />
                   <p className="text-muted-foreground">Všechna videa jsou zkontrolována.</p>
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
             {pendingFlags && pendingFlags.length > 0 ? (
               <div className="grid gap-4">
                 {pendingFlags.map((flag) => (
-                  <Card key={flag.id} className="femsider-card">
+                  <Card key={flag.id} className="symbiote-card">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
                         <AlertTriangle className="h-10 w-10 text-accent flex-shrink-0" />
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
             ) : (
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardContent className="p-8 text-center">
                   <Check className="h-12 w-12 mx-auto mb-4 text-green-500" />
                   <p className="text-muted-foreground">Žádná nahlášení k řešení.</p>

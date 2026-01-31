@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, and, desc, sql, isNotNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -2059,5 +2059,38 @@ export async function getConversationById(conversationId: number) {
     .where(eq(conversations.id, conversationId))
     .limit(1);
   
+  return result[0] || null;
+}
+
+
+// ============ YOUTUBE INTEGRATION FUNCTIONS ============
+
+export async function getVideoByYoutubeId(youtubeVideoId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(videos).where(eq(videos.youtubeVideoId, youtubeVideoId)).limit(1);
+  return result[0] || null;
+}
+
+export async function getYoutubeVideos() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(videos).where(isNotNull(videos.youtubeVideoId));
+}
+
+export async function updateVideoYoutubeSync(videoId: number, syncTime: Date) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(videos).set({ lastYoutubeSync: syncTime }).where(eq(videos.id, videoId));
+}
+
+export async function getCommentByYoutubeId(youtubeCommentId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(comments).where(eq(comments.youtubeCommentId, youtubeCommentId)).limit(1);
   return result[0] || null;
 }

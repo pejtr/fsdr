@@ -90,9 +90,9 @@ export default function CreatorProfile() {
       <main className="container py-8">
         <div className="max-w-5xl mx-auto">
           {/* Profile Header */}
-          <Card className="femsider-card overflow-hidden mb-8">
+          <Card className="symbiote-card overflow-hidden mb-8">
             {/* Banner */}
-            <div className="h-32 md:h-48 femsider-gradient" />
+            <div className="h-32 md:h-48 symbiote-gradient" />
             
             <CardContent className="relative pt-0 pb-6 px-6">
               {/* Avatar */}
@@ -115,7 +115,7 @@ export default function CreatorProfile() {
                     <Button 
                       onClick={handleSubscribe}
                       disabled={subscribeMutation.isPending}
-                      className="femsider-gradient text-white border-0"
+                      className="symbiote-gradient text-white border-0"
                     >
                       <DollarSign className="h-4 w-4 mr-2" />
                       Odebírat za ${creator.subscriptionPrice}/měsíc
@@ -192,7 +192,7 @@ function VideoCard({ video, hasAccess }: VideoCardProps) {
 
   return (
     <Link href={`/video/${video.id}`}>
-      <Card className="femsider-card overflow-hidden cursor-pointer group transition-all hover:femsider-glow">
+      <Card className="symbiote-card overflow-hidden cursor-pointer group transition-all hover:symbiote-glow">
         <div className="relative aspect-video bg-secondary">
           {video.thumbnailUrl ? (
             <img
@@ -213,7 +213,7 @@ function VideoCard({ video, hasAccess }: VideoCardProps) {
           
           {/* Premium badge */}
           {video.isPremium && (
-            <div className="absolute top-2 left-2 femsider-gradient px-2 py-1 rounded text-xs font-medium">
+            <div className="absolute top-2 left-2 symbiote-gradient px-2 py-1 rounded text-xs font-medium">
               PREMIUM
             </div>
           )}

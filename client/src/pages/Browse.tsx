@@ -14,7 +14,7 @@ export default function Browse() {
       
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">
-          <span className="femsider-text-gradient">Procházet</span> videa
+          <span className="symbiote-text-gradient">Procházet</span> videa
         </h1>
 
         {isLoading ? (
@@ -63,7 +63,7 @@ function VideoCard({ video }: VideoCardProps) {
 
   return (
     <Link href={`/video/${video.id}`}>
-      <Card className="femsider-card overflow-hidden cursor-pointer group transition-all hover:femsider-glow">
+      <Card className="symbiote-card overflow-hidden cursor-pointer group transition-all hover:symbiote-glow">
         <div className="relative aspect-video bg-secondary">
           {video.thumbnailUrl ? (
             <img
@@ -84,7 +84,7 @@ function VideoCard({ video }: VideoCardProps) {
           
           {/* Premium badge */}
           {video.isPremium && (
-            <div className="absolute top-2 left-2 femsider-gradient px-2 py-1 rounded text-xs font-medium">
+            <div className="absolute top-2 left-2 symbiote-gradient px-2 py-1 rounded text-xs font-medium">
               PREMIUM
             </div>
           )}
@@ -119,7 +119,7 @@ function VideoCard({ video }: VideoCardProps) {
 
 function VideoCardSkeleton() {
   return (
-    <Card className="femsider-card overflow-hidden">
+    <Card className="symbiote-card overflow-hidden">
       <Skeleton className="aspect-video" />
       <CardContent className="p-4">
         <Skeleton className="h-5 w-full mb-2" />

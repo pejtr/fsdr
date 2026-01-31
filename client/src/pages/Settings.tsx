@@ -57,7 +57,7 @@ export default function Settings() {
           <h1 className="text-2xl font-bold mb-4">Přihlaste se</h1>
           <p className="text-muted-foreground mb-4">Pro přístup k nastavení se musíte přihlásit.</p>
           <a href={getLoginUrl()}>
-            <Button className="femsider-gradient text-white border-0">Přihlásit se</Button>
+            <Button className="symbiote-gradient text-white border-0">Přihlásit se</Button>
           </a>
         </main>
       </div>
@@ -70,7 +70,7 @@ export default function Settings() {
       
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">
-          <span className="femsider-text-gradient">Nastavení</span>
+          <span className="symbiote-text-gradient">Nastavení</span>
         </h1>
 
         <div className="max-w-2xl">
@@ -93,7 +93,7 @@ export default function Settings() {
             </TabsList>
             
             <TabsContent value="profile">
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Informace o profilu</CardTitle>
                 </CardHeader>
@@ -149,7 +149,7 @@ export default function Settings() {
                   <Button 
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
-                    className="femsider-gradient text-white border-0"
+                    className="symbiote-gradient text-white border-0"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {updateMutation.isPending ? 'Ukládám...' : 'Uložit změny'}
@@ -160,7 +160,7 @@ export default function Settings() {
             
             {(user?.role === 'creator' || user?.role === 'admin') && (
               <TabsContent value="monetization">
-                <Card className="femsider-card">
+                <Card className="symbiote-card">
                   <CardHeader>
                     <CardTitle>Nastavení monetizace</CardTitle>
                   </CardHeader>
@@ -186,7 +186,7 @@ export default function Settings() {
                       </p>
                     </div>
                     
-                    <div className="femsider-card p-4">
+                    <div className="symbiote-card p-4">
                       <h4 className="font-medium mb-2">Váš výdělek</h4>
                       <p className="text-sm text-muted-foreground">
                         Z každého předplatného získáte <span className="text-primary font-bold">88%</span>.
@@ -199,7 +199,7 @@ export default function Settings() {
                     <Button 
                       onClick={handleSave}
                       disabled={updateMutation.isPending}
-                      className="femsider-gradient text-white border-0"
+                      className="symbiote-gradient text-white border-0"
                     >
                       <Save className="h-4 w-4 mr-2" />
                       {updateMutation.isPending ? 'Ukládám...' : 'Uložit změny'}
@@ -210,7 +210,7 @@ export default function Settings() {
             )}
             
             <TabsContent value="security">
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Bezpečnost a ověření</CardTitle>
                 </CardHeader>
@@ -230,7 +230,7 @@ export default function Settings() {
                       </span>
                     ) : (
                       <Link href="/verify-age">
-                        <Button className="femsider-gradient text-white border-0">
+                        <Button className="symbiote-gradient text-white border-0">
                           Ověřit
                         </Button>
                       </Link>

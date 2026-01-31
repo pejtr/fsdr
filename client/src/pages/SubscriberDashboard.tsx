@@ -34,7 +34,7 @@ export default function SubscriberDashboard() {
           <h1 className="text-2xl font-bold mb-4">Přihlaste se</h1>
           <p className="text-muted-foreground mb-4">Pro zobrazení odběrů se musíte přihlásit.</p>
           <a href={getLoginUrl()}>
-            <Button className="femsider-gradient text-white border-0">Přihlásit se</Button>
+            <Button className="symbiote-gradient text-white border-0">Přihlásit se</Button>
           </a>
         </main>
       </div>
@@ -50,7 +50,7 @@ export default function SubscriberDashboard() {
       
       <main className="container py-8">
         <h1 className="text-3xl font-bold mb-8">
-          <span className="femsider-text-gradient">Moje</span> odběry
+          <span className="symbiote-text-gradient">Moje</span> odběry
         </h1>
 
         {/* Active Subscriptions */}
@@ -72,12 +72,12 @@ export default function SubscriberDashboard() {
               ))}
             </div>
           ) : (
-            <Card className="femsider-card">
+            <Card className="symbiote-card">
               <CardContent className="p-8 text-center">
                 <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">Zatím nemáte žádné aktivní odběry.</p>
                 <Link href="/browse">
-                  <Button className="femsider-gradient text-white border-0">
+                  <Button className="symbiote-gradient text-white border-0">
                     Procházet tvůrce
                   </Button>
                 </Link>
@@ -129,7 +129,7 @@ function SubscriptionCard({ subscription, onCancel, isCancelling, isInactive }: 
   );
 
   return (
-    <Card className="femsider-card">
+    <Card className="symbiote-card">
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
           <Link href={`/creator/${subscription.creatorId}`}>

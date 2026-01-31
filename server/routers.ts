@@ -850,6 +850,176 @@ export const appRouter = router({
         await db.incrementThumbnailClicks(input.variantId);
         return { success: true };
       }),
+
+    // Import videos from YouTube channel (real API)
+    importFromAPI: adminProcedure
+      .input(z.object({
+        channelId: z.string(),
+        maxResults: z.number().default(50)
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+        if (!YOUTUBE_API_KEY) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'YouTube API key not configured' });
+        }
+
+        // Fetch videos from YouTube
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${input.channelId}&part=snippet&order=date&maxResults=${input.maxResults}&type=video`
+        );
+
+        if (!response.ok) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch YouTube videos' });
+        }
+
+        const data = await response.json();
+        const videos = data.items || [];
+
+        // Fetch video details (statistics, duration)
+        const videoIds = videos.map((v: any) => v.id.videoId).join(',');
+        const detailsResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?key=${YOUTUBE_API_KEY}&id=${videoIds}&part=snippet,statistics,contentDetails`
+        );
+
+        if (!detailsResponse.ok) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch video details' });
+        }
+
+        const detailsData = await detailsResponse.json();
+        const videoDetails = detailsData.items || [];
+
+        // Import videos to database
+        let imported = 0;
+        for (const video of videoDetails) {
+          const existing = await db.getVideoByYoutubeId(video.id);
+          if (existing) continue;
+
+          // Parse duration (PT1M30S -> 90 seconds)
+          const duration = parseDuration(video.contentDetails.duration);
+
+          await db.createVideo({
+            creatorId: ctx.user.id,
+            title: video.snippet.title,
+            description: video.snippet.description,
+            thumbnailUrl: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url,
+            videoUrl: `https://www.youtube.com/embed/${video.id}`,
+            duration,
+            isPremium: false,
+            isPublished: true,
+            status: 'approved',
+            youtubeVideoId: video.id,
+            youtubeChannelId: input.channelId,
+            youtubePublishedAt: new Date(video.snippet.publishedAt),
+            youtubeViewCount: parseInt(video.statistics.viewCount || '0'),
+            youtubeLikeCount: parseInt(video.statistics.likeCount || '0'),
+            youtubeCommentCount: parseInt(video.statistics.commentCount || '0'),
+            lastYoutubeSync: new Date(),
+          });
+          imported++;
+        }
+
+        return { success: true, imported, total: videos.length };
+      }),
+
+    // Sync YouTube comments for a video
+    syncComments: adminProcedure
+      .input(z.object({ videoId: z.number() }))
+      .mutation(async ({ input }) => {
+        const video = await db.getVideoById(input.videoId);
+        if (!video || !video.youtubeVideoId) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Video not found or not from YouTube' });
+        }
+
+        const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+        if (!YOUTUBE_API_KEY) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'YouTube API key not configured' });
+        }
+
+        // Fetch comments from YouTube
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/commentThreads?key=${YOUTUBE_API_KEY}&videoId=${video.youtubeVideoId}&part=snippet&maxResults=100&order=relevance`
+        );
+
+        if (!response.ok) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch YouTube comments' });
+        }
+
+        const data = await response.json();
+        const comments = data.items || [];
+
+        // Import comments to database
+        let imported = 0;
+        for (const comment of comments) {
+          const snippet = comment.snippet.topLevelComment.snippet;
+          
+          // Check if comment already exists
+          const existing = await db.getCommentByYoutubeId(comment.id);
+          if (existing) continue;
+
+          await db.createComment({
+            videoId: input.videoId,
+            authorId: video.creatorId, // Assign to video creator
+            content: snippet.textDisplay,
+            youtubeCommentId: comment.id,
+            youtubeAuthorName: snippet.authorDisplayName,
+            youtubeAuthorChannelId: snippet.authorChannelId?.value,
+            youtubePublishedAt: new Date(snippet.publishedAt),
+          });
+          imported++;
+        }
+
+        // Update sync timestamp
+        await db.updateVideoYoutubeSync(input.videoId, new Date());
+
+        return { success: true, imported, total: comments.length };
+      }),
+
+    // Sync all YouTube videos (cron job endpoint)
+    syncAll: adminProcedure
+      .mutation(async () => {
+        const videos = await db.getYoutubeVideos();
+        let synced = 0;
+
+        for (const video of videos) {
+          try {
+            // Sync comments for each video
+            const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+            if (!YOUTUBE_API_KEY) continue;
+
+            const response = await fetch(
+              `https://www.googleapis.com/youtube/v3/commentThreads?key=${YOUTUBE_API_KEY}&videoId=${video.youtubeVideoId}&part=snippet&maxResults=100&order=time`
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              const comments = data.items || [];
+
+              for (const comment of comments) {
+                const snippet = comment.snippet.topLevelComment.snippet;
+                const existing = await db.getCommentByYoutubeId(comment.id);
+                if (existing) continue;
+
+                await db.createComment({
+                  videoId: video.id,
+                  authorId: video.creatorId,
+                  content: snippet.textDisplay,
+                  youtubeCommentId: comment.id,
+                  youtubeAuthorName: snippet.authorDisplayName,
+                  youtubeAuthorChannelId: snippet.authorChannelId?.value,
+                  youtubePublishedAt: new Date(snippet.publishedAt),
+                });
+              }
+
+              await db.updateVideoYoutubeSync(video.id, new Date());
+              synced++;
+            }
+          } catch (error) {
+            console.error(`Failed to sync video ${video.id}:`, error);
+          }
+        }
+
+        return { success: true, synced, total: videos.length };
+      }),
   }),
 
   // Admin/Moderation
@@ -1816,5 +1986,15 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
       }),
   }),
 });
+
+// Helper function to parse YouTube duration (PT1M30S -> 90)
+function parseDuration(duration: string): number {
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const hours = parseInt(match[1] || '0');
+  const minutes = parseInt(match[2] || '0');
+  const seconds = parseInt(match[3] || '0');
+  return hours * 3600 + minutes * 60 + seconds;
+}
 
 export type AppRouter = typeof appRouter;

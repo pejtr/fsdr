@@ -42,76 +42,93 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* FEMSIDER Dark Theme */
+/* FEMSIDER Symbiote Theme - Venom/Skrull Inspired */
 :root {
-  --primary: oklch(0.65 0.25 10);
+  /* Symbiote primary colors - teal/emerald with high saturation */
+  --primary: oklch(0.6 0.15 180);
   --primary-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.65 0.25 10);
+  --sidebar-primary: oklch(0.6 0.15 180);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --chart-1: oklch(0.65 0.25 10);
-  --chart-2: oklch(0.65 0.22 340);
-  --chart-3: oklch(0.7 0.15 30);
-  --chart-4: oklch(0.6 0.2 280);
-  --chart-5: oklch(0.7 0.2 60);
+  
+  /* Chart colors with symbiote palette */
+  --chart-1: oklch(0.6 0.15 180);
+  --chart-2: oklch(0.55 0.15 160);
+  --chart-3: oklch(0.65 0.12 200);
+  --chart-4: oklch(0.5 0.18 170);
+  --chart-5: oklch(0.7 0.1 190);
+  
   --radius: 0.5rem;
-  --background: oklch(0.08 0 0);
+  
+  /* Dark background with slight teal tint */
+  --background: oklch(0.08 0.01 180);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.12 0 0);
+  
+  /* Cards with subtle teal undertone */
+  --card: oklch(0.12 0.02 180);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.14 0 0);
+  
+  --popover: oklch(0.14 0.02 180);
   --popover-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.18 0 0);
+  
+  --secondary: oklch(0.18 0.02 180);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.2 0 0);
+  
+  --muted: oklch(0.2 0.02 180);
   --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.65 0.22 340);
+  
+  /* Accent with emerald tone */
+  --accent: oklch(0.55 0.15 160);
   --accent-foreground: oklch(0.98 0 0);
+  
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0 0);
-  --input: oklch(0.18 0 0);
-  --ring: oklch(0.65 0.25 10);
-  --sidebar: oklch(0.1 0 0);
+  
+  /* Borders with teal tint */
+  --border: oklch(0.25 0.03 180);
+  --input: oklch(0.18 0.02 180);
+  --ring: oklch(0.6 0.15 180);
+  
+  --sidebar: oklch(0.1 0.01 180);
   --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent: oklch(0.18 0.02 180);
   --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.65 0.25 10);
+  --sidebar-border: oklch(0.2 0.02 180);
+  --sidebar-ring: oklch(0.6 0.15 180);
 }
 
 .dark {
-  --primary: oklch(0.65 0.25 10);
+  --primary: oklch(0.6 0.15 180);
   --primary-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.65 0.25 10);
+  --sidebar-primary: oklch(0.6 0.15 180);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --background: oklch(0.08 0 0);
+  --background: oklch(0.08 0.01 180);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.12 0 0);
+  --card: oklch(0.12 0.02 180);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.14 0 0);
+  --popover: oklch(0.14 0.02 180);
   --popover-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.18 0 0);
+  --secondary: oklch(0.18 0.02 180);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.2 0 0);
+  --muted: oklch(0.2 0.02 180);
   --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.65 0.22 340);
+  --accent: oklch(0.55 0.15 160);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0 0);
-  --input: oklch(0.18 0 0);
-  --ring: oklch(0.65 0.25 10);
-  --chart-1: oklch(0.65 0.25 10);
-  --chart-2: oklch(0.65 0.22 340);
-  --chart-3: oklch(0.7 0.15 30);
-  --chart-4: oklch(0.6 0.2 280);
-  --chart-5: oklch(0.7 0.2 60);
-  --sidebar: oklch(0.1 0 0);
+  --border: oklch(0.25 0.03 180);
+  --input: oklch(0.18 0.02 180);
+  --ring: oklch(0.6 0.15 180);
+  --chart-1: oklch(0.6 0.15 180);
+  --chart-2: oklch(0.55 0.15 160);
+  --chart-3: oklch(0.65 0.12 200);
+  --chart-4: oklch(0.5 0.18 170);
+  --chart-5: oklch(0.7 0.1 190);
+  --sidebar: oklch(0.1 0.01 180);
   --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent: oklch(0.18 0.02 180);
   --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.65 0.25 10);
+  --sidebar-border: oklch(0.2 0.02 180);
+  --sidebar-ring: oklch(0.6 0.15 180);
 }
 
 @layer base {
@@ -177,40 +194,80 @@
   }
 }
 
-/* FEMSIDER Custom Styles */
+/* FEMSIDER Symbiote Custom Styles */
 @layer components {
-  .femsider-gradient {
-    background: linear-gradient(135deg, oklch(0.65 0.25 10) 0%, oklch(0.65 0.22 340) 100%);
+  /* Symbiote gradient - teal to emerald */
+  .symbiote-gradient {
+    background: linear-gradient(135deg, oklch(0.6 0.15 180) 0%, oklch(0.55 0.15 160) 50%, oklch(0.65 0.12 200) 100%);
   }
-  .femsider-glow {
-    box-shadow: 0 0 20px oklch(0.65 0.25 10 / 0.3), 0 0 40px oklch(0.65 0.22 340 / 0.2);
+  
+  /* Symbiote glow effect - teal/emerald aura */
+  .symbiote-glow {
+    box-shadow: 
+      0 0 20px oklch(0.6 0.15 180 / 0.4), 
+      0 0 40px oklch(0.55 0.15 160 / 0.3),
+      0 0 60px oklch(0.65 0.12 200 / 0.2);
   }
-  .femsider-text-gradient {
-    background: linear-gradient(135deg, oklch(0.65 0.25 10) 0%, oklch(0.65 0.22 340) 100%);
+  
+  /* Symbiote text gradient */
+  .symbiote-text-gradient {
+    background: linear-gradient(135deg, oklch(0.6 0.15 180) 0%, oklch(0.55 0.15 160) 50%, oklch(0.65 0.12 200) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 4px 30px oklch(0 0 0 / 0.8), 0 2px 10px oklch(0 0 0 / 0.6);
-    filter: drop-shadow(0 4px 20px oklch(0 0 0 / 0.7));
+    filter: drop-shadow(0 0 10px oklch(0.6 0.15 180 / 0.5));
   }
+  
+  /* Symbiote card with organic border */
+  .symbiote-card {
+    background: oklch(0.12 0.02 180);
+    border: 1px solid oklch(0.25 0.03 180);
+    border-radius: 0.5rem;
+    position: relative;
+  }
+  
+  .symbiote-card:hover {
+    border-color: oklch(0.6 0.15 180 / 0.6);
+  }
+  
+  /* Legacy FEMSIDER styles for backward compatibility */
+  .femsider-gradient {
+    background: linear-gradient(135deg, oklch(0.6 0.15 180) 0%, oklch(0.55 0.15 160) 100%);
+  }
+  
+  .femsider-glow {
+    box-shadow: 0 0 20px oklch(0.6 0.15 180 / 0.3), 0 0 40px oklch(0.55 0.15 160 / 0.2);
+  }
+  
+  .femsider-text-gradient {
+    background: linear-gradient(135deg, oklch(0.6 0.15 180) 0%, oklch(0.55 0.15 160) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
   .femsider-hero-title {
-    text-shadow: 0 4px 30px oklch(0 0 0 / 0.9), 0 2px 15px oklch(0 0 0 / 0.7), 0 8px 40px oklch(0.65 0.25 10 / 0.3);
+    text-shadow: 0 4px 30px oklch(0 0 0 / 0.9), 0 2px 15px oklch(0 0 0 / 0.7), 0 8px 40px oklch(0.6 0.15 180 / 0.3);
     filter: drop-shadow(0 4px 25px oklch(0 0 0 / 0.8));
   }
+  
   .femsider-parallax {
     transform-style: preserve-3d;
     perspective: 1000px;
   }
+  
   .femsider-parallax-bg {
     will-change: transform;
     transition: transform 0.1s ease-out;
   }
+  
   .femsider-card {
-    background: oklch(0.12 0 0);
-    border: 1px solid oklch(0.25 0 0);
+    background: oklch(0.12 0.02 180);
+    border: 1px solid oklch(0.25 0.03 180);
     border-radius: 0.5rem;
   }
+  
   .femsider-card:hover {
-    border-color: oklch(0.65 0.25 10 / 0.5);
+    border-color: oklch(0.6 0.15 180 / 0.5);
   }
 }

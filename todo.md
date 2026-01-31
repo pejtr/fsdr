@@ -140,3 +140,15 @@
 - [x] Náhledové obrázky pro každou TG/TF šablonu (12 obrázků)
 - [x] Automatické generování scénářů z vybraných šablon
 - [x] Galerie hotových videí pro inspiraci uživatelů
+
+## Galerie a Chatbot vylepšení
+- [x] Odkaz na galerii v hlavní navigaci
+- [ ] Nahrávání vlastních videí do galerie
+- [ ] Systém hodnocení (hvězdičky) pod videa
+- [ ] Komentáře pod videa v galerii
+- [ ] Perzistentní paměť pro chatbota (ukládání konverzací)
+- [ ] RAG systém pro chatbota (kontextové odpovědi z databáze)
+- [x] Načteno 60 videí z YouTube kanálu @FEMSIDER
+- [ ] Importovat YouTube videa do databáze
+- [ ] Redesign homepage jako Patreon-style profil (membership tiers, community posts)
+- [x] Hero sekce - nadpis FEMSIDER 100% průhledný, posunout popis a tlačítko níže

@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json } from "drizzle-orm/mysql-core";
 
 // Users table with roles (admin, creator, subscriber)
 export const users = mysqlTable("users", {
@@ -36,6 +36,14 @@ export const videos = mysqlTable("videos", {
   viewCount: int("viewCount").default(0),
   likeCount: int("likeCount").default(0),
   status: mysqlEnum("status", ["pending", "approved", "rejected", "flagged"]).default("pending"),
+  // YouTube integration
+  youtubeVideoId: varchar("youtubeVideoId", { length: 32 }),
+  youtubeChannelId: varchar("youtubeChannelId", { length: 64 }),
+  youtubePublishedAt: timestamp("youtubePublishedAt"),
+  youtubeViewCount: int("youtubeViewCount"),
+  youtubeLikeCount: int("youtubeLikeCount"),
+  youtubeCommentCount: int("youtubeCommentCount"),
+  lastYoutubeSync: timestamp("lastYoutubeSync"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -393,6 +401,11 @@ export const comments = mysqlTable("comments", {
   content: text("content").notNull(),
   likeCount: int("likeCount").default(0),
   isEdited: boolean("isEdited").default(false),
+  // YouTube integration
+  youtubeCommentId: varchar("youtubeCommentId", { length: 128 }),
+  youtubeAuthorName: varchar("youtubeAuthorName", { length: 255 }),
+  youtubeAuthorChannelId: varchar("youtubeAuthorChannelId", { length: 64 }),
+  youtubePublishedAt: timestamp("youtubePublishedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -628,3 +641,127 @@ export const videoGenerationJobs = mysqlTable("videoGenerationJobs", {
 
 export type VideoGenerationJob = typeof videoGenerationJobs.$inferSelect;
 export type InsertVideoGenerationJob = typeof videoGenerationJobs.$inferInsert;
+
+// ============================================
+// GALLERY VIDEOS
+// ============================================
+export const galleryVideos = mysqlTable("galleryVideos", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  videoUrl: text("videoUrl").notNull(),
+  thumbnailUrl: text("thumbnailUrl"),
+  duration: int("duration"), // seconds
+  category: mysqlEnum("category", ["tgtf", "body_swap", "transformation", "romance", "fantasy", "other"]),
+  tags: json("tags").$type<string[]>(),
+  // Stats
+  viewCount: int("viewCount").default(0),
+  likeCount: int("likeCount").default(0),
+  commentCount: int("commentCount").default(0),
+  averageRating: decimal("averageRating", { precision: 3, scale: 2 }).default("0.00"),
+  ratingCount: int("ratingCount").default(0),
+  // Status
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending"),
+  isPublic: boolean("isPublic").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GalleryVideo = typeof galleryVideos.$inferSelect;
+export type InsertGalleryVideo = typeof galleryVideos.$inferInsert;
+
+// Gallery video likes
+export const galleryLikes = mysqlTable("galleryLikes", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: int("videoId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GalleryLike = typeof galleryLikes.$inferSelect;
+
+// Gallery video ratings
+export const galleryRatings = mysqlTable("galleryRatings", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: int("videoId").notNull(),
+  userId: int("userId").notNull(),
+  rating: int("rating").notNull(), // 1-5 stars
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GalleryRating = typeof galleryRatings.$inferSelect;
+
+// Gallery video comments
+export const galleryComments = mysqlTable("galleryComments", {
+  id: int("id").autoincrement().primaryKey(),
+  videoId: int("videoId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  parentId: int("parentId"), // for nested replies
+  likeCount: int("likeCount").default(0),
+  isEdited: boolean("isEdited").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GalleryComment = typeof galleryComments.$inferSelect;
+export type InsertGalleryComment = typeof galleryComments.$inferInsert;
+
+// ============================================
+// CHATBOT WITH MEMORY & RAG
+// ============================================
+
+// Chat conversations (persistent memory)
+export const chatConversations = mysqlTable("chatConversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }),
+  context: mysqlEnum("context", ["content", "thumbnails", "analytics", "marketing", "general"]).default("general"),
+  messageCount: int("messageCount").default(0),
+  lastMessageAt: timestamp("lastMessageAt"),
+  isClosed: boolean("isClosed").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = typeof chatConversations.$inferInsert;
+
+// Chat messages
+export const chatMessages = mysqlTable("chatMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["user", "assistant", "system"]).notNull(),
+  content: text("content").notNull(),
+  // RAG metadata
+  sourceDocuments: json("sourceDocuments").$type<string[]>(), // RAG document titles used
+  confidence: decimal("confidence", { precision: 3, scale: 2 }), // 0.00-1.00
+  // Feedback
+  wasHelpful: boolean("wasHelpful"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+// RAG knowledge base documents
+export const ragDocuments = mysqlTable("ragDocuments", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  category: mysqlEnum("category", ["faq", "tutorial", "policy", "feature", "tip", "best_practice"]).notNull(),
+  tags: json("tags").$type<string[]>(),
+  // Usage stats
+  useCount: int("useCount").default(0),
+  helpfulCount: int("helpfulCount").default(0),
+  // Status
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RagDocument = typeof ragDocuments.$inferSelect;
+export type InsertRagDocument = typeof ragDocuments.$inferInsert;

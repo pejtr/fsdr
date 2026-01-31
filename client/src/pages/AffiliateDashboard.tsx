@@ -121,7 +121,7 @@ export default function AffiliateDashboard() {
           <h1 className="text-2xl font-bold mb-4">Přihlaste se</h1>
           <p className="text-muted-foreground mb-4">Pro přístup k affiliate dashboardu se musíte přihlásit.</p>
           <a href={getLoginUrl()}>
-            <Button className="femsider-gradient text-white border-0">Přihlásit se</Button>
+            <Button className="symbiote-gradient text-white border-0">Přihlásit se</Button>
           </a>
         </main>
       </div>
@@ -138,7 +138,7 @@ export default function AffiliateDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">
-              <span className="femsider-text-gradient">Affiliate</span> Dashboard
+              <span className="symbiote-text-gradient">Affiliate</span> Dashboard
             </h1>
             <p className="text-muted-foreground mt-1">
               Sleduj svou síť, výdělky a odznaky
@@ -183,7 +183,7 @@ export default function AffiliateDashboard() {
         </div>
 
         {/* Affiliate Link */}
-        <Card className="femsider-card mb-8">
+        <Card className="symbiote-card mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Copy className="h-5 w-5 text-primary" />
@@ -197,7 +197,7 @@ export default function AffiliateDashboard() {
                 value={`${window.location.origin}?ref=${stats?.affiliateCode || ''}`}
                 className="bg-input font-mono text-sm"
               />
-              <Button onClick={copyAffiliateLink} className="femsider-gradient text-white border-0">
+              <Button onClick={copyAffiliateLink} className="symbiote-gradient text-white border-0">
                 <Copy className="h-4 w-4 mr-2" />
                 Kopírovat
               </Button>
@@ -226,19 +226,19 @@ export default function AffiliateDashboard() {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="femsider-card p-3">
+              <div className="symbiote-card p-3">
                 <p className="text-2xl font-bold text-primary">{(stats?.tiers?.[1] ?? 0.25) * 100}%</p>
                 <p className="text-xs text-muted-foreground">Tier 1</p>
               </div>
-              <div className="femsider-card p-3">
+              <div className="symbiote-card p-3">
                 <p className="text-2xl font-bold text-blue-400">{(stats?.tiers?.[2] ?? 0.10) * 100}%</p>
                 <p className="text-xs text-muted-foreground">Tier 2</p>
               </div>
-              <div className="femsider-card p-3">
+              <div className="symbiote-card p-3">
                 <p className="text-2xl font-bold text-purple-400">{(stats?.tiers?.[3] ?? 0.05) * 100}%</p>
                 <p className="text-xs text-muted-foreground">Tier 3</p>
               </div>
-              <div className="femsider-card p-3">
+              <div className="symbiote-card p-3">
                 <p className="text-2xl font-bold text-pink-400">{(stats?.tiers?.[4] ?? 0.02) * 100}%</p>
                 <p className="text-xs text-muted-foreground">Tier 4</p>
               </div>
@@ -279,7 +279,7 @@ export default function AffiliateDashboard() {
           <TabsContent value="network">
             <div className="grid md:grid-cols-2 gap-6">
               {/* Network Visualization */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Struktura sítě</CardTitle>
                 </CardHeader>
@@ -316,7 +316,7 @@ export default function AffiliateDashboard() {
                     <div className="pt-4 border-t border-border">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">Celkem v síti</span>
-                        <span className="text-2xl font-bold femsider-text-gradient">
+                        <span className="text-2xl font-bold symbiote-text-gradient">
                           {stats?.networkStats?.total || 0}
                         </span>
                       </div>
@@ -326,7 +326,7 @@ export default function AffiliateDashboard() {
               </Card>
 
               {/* Direct Referrals List */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Přímé referraly ({directReferrals?.length || 0})</CardTitle>
                 </CardHeader>
@@ -370,7 +370,7 @@ export default function AffiliateDashboard() {
           
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard">
-            <Card className="femsider-card">
+            <Card className="symbiote-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-yellow-500" />
@@ -402,7 +402,7 @@ export default function AffiliateDashboard() {
           <TabsContent value="badges">
             <div className="grid md:grid-cols-2 gap-6">
               {/* Earned Badges */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="h-5 w-5 text-primary" />
@@ -434,7 +434,7 @@ export default function AffiliateDashboard() {
               </Card>
 
               {/* All Badges */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-yellow-500" />
@@ -466,7 +466,7 @@ export default function AffiliateDashboard() {
           <TabsContent value="earnings">
             <div className="grid md:grid-cols-2 gap-6">
               {/* Earnings by Tier */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Výdělky podle úrovně</CardTitle>
                 </CardHeader>
@@ -488,7 +488,7 @@ export default function AffiliateDashboard() {
               </Card>
 
               {/* Recent Earnings */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle>Poslední transakce</CardTitle>
                 </CardHeader>
@@ -531,7 +531,7 @@ export default function AffiliateDashboard() {
           <TabsContent value="promo">
             <div className="grid md:grid-cols-2 gap-6">
               {/* QR Code */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <QrCode className="h-5 w-5 text-primary" />
@@ -586,7 +586,7 @@ export default function AffiliateDashboard() {
               </Card>
 
               {/* Banners */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Image className="h-5 w-5 text-primary" />
@@ -668,7 +668,7 @@ export default function AffiliateDashboard() {
               </Card>
 
               {/* Text Templates */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
@@ -699,7 +699,7 @@ export default function AffiliateDashboard() {
             </div>
 
             {/* Quick Stats */}
-            <Card className="femsider-card mt-6">
+            <Card className="symbiote-card mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
@@ -729,7 +729,7 @@ export default function AffiliateDashboard() {
           <TabsContent value="links">
             <div className="grid md:grid-cols-2 gap-6">
               {/* All Links */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Link2 className="h-5 w-5 text-primary" />
@@ -790,7 +790,7 @@ export default function AffiliateDashboard() {
               </Card>
 
               {/* Link Performance */}
-              <Card className="femsider-card">
+              <Card className="symbiote-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5 text-primary" />
@@ -851,7 +851,7 @@ export default function AffiliateDashboard() {
             </div>
             
             {/* Earnings by Link Type */}
-            <Card className="femsider-card mt-6">
+            <Card className="symbiote-card mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
@@ -988,7 +988,7 @@ function StatCard({ title, value, icon, gradient }: {
   gradient: string;
 }) {
   return (
-    <Card className="femsider-card overflow-hidden">
+    <Card className="symbiote-card overflow-hidden">
       <CardContent className="p-6 relative">
         <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-bl-full`} />
         <div className="flex items-center justify-between mb-2">

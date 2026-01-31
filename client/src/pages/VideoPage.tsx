@@ -103,7 +103,7 @@ export default function VideoPage() {
                   Pro přístup k tomuto videu potřebujete předplatné
                 </p>
                 <Link href={`/creator/${video.creatorId}`}>
-                  <Button className="femsider-gradient text-white border-0">
+                  <Button className="symbiote-gradient text-white border-0">
                     Odebírat tvůrce
                   </Button>
                 </Link>
@@ -132,7 +132,7 @@ export default function VideoPage() {
               variant={video.hasLiked ? "default" : "outline"}
               onClick={handleLike}
               disabled={likeMutation.isPending}
-              className={video.hasLiked ? 'femsider-gradient text-white border-0' : ''}
+              className={video.hasLiked ? 'symbiote-gradient text-white border-0' : ''}
             >
               <Heart className={`h-4 w-4 mr-2 ${video.hasLiked ? 'fill-white' : ''}`} />
               {video.hasLiked ? 'Líbí se mi' : 'To se mi líbí'}
@@ -149,7 +149,7 @@ export default function VideoPage() {
 
           {/* Creator Card */}
           {creator && (
-            <Card className="femsider-card">
+            <Card className="symbiote-card">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <Link href={`/creator/${creator.id}`}>
@@ -171,7 +171,7 @@ export default function VideoPage() {
                     </p>
                   </div>
                   <Link href={`/creator/${creator.id}`}>
-                    <Button className="femsider-gradient text-white border-0">
+                    <Button className="symbiote-gradient text-white border-0">
                       Profil tvůrce
                     </Button>
                   </Link>
@@ -182,7 +182,7 @@ export default function VideoPage() {
 
           {/* Description */}
           {video.description && (
-            <Card className="femsider-card mt-6">
+            <Card className="symbiote-card mt-6">
               <CardContent className="p-4">
                 <h3 className="font-semibold mb-2">Popis</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">

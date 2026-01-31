@@ -36,7 +36,7 @@ export default function AgeVerification() {
           <h1 className="text-2xl font-bold mb-4">Přihlaste se</h1>
           <p className="text-muted-foreground mb-4">Pro ověření věku se musíte přihlásit.</p>
           <a href={getLoginUrl()}>
-            <Button className="femsider-gradient text-white border-0">Přihlásit se</Button>
+            <Button className="symbiote-gradient text-white border-0">Přihlásit se</Button>
           </a>
         </main>
       </div>
@@ -58,7 +58,7 @@ export default function AgeVerification() {
               Váš věk byl úspěšně ověřen. Nyní máte přístup ke všem funkcím platformy.
             </p>
             <Link href="/browse">
-              <Button className="femsider-gradient text-white border-0">
+              <Button className="symbiote-gradient text-white border-0">
                 Procházet obsah
               </Button>
             </Link>
@@ -82,7 +82,7 @@ export default function AgeVerification() {
             </p>
           </div>
 
-          <div className="femsider-card p-6 mb-6">
+          <div className="symbiote-card p-6 mb-6">
             <div className="flex items-start gap-4">
               <AlertTriangle className="h-6 w-6 text-accent flex-shrink-0 mt-1" />
               <div>
@@ -141,7 +141,7 @@ interface VerificationOptionProps {
 
 function VerificationOption({ icon, title, description, onClick, isLoading }: VerificationOptionProps) {
   return (
-    <Card className="femsider-card cursor-pointer transition-all hover:femsider-glow" onClick={onClick}>
+    <Card className="symbiote-card cursor-pointer transition-all hover:symbiote-glow" onClick={onClick}>
       <CardContent className="p-6">
         <div className="flex items-center gap-4">
           <div className="text-primary">{icon}</div>
@@ -150,7 +150,7 @@ function VerificationOption({ icon, title, description, onClick, isLoading }: Ve
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
           <Button 
-            className="femsider-gradient text-white border-0"
+            className="symbiote-gradient text-white border-0"
             disabled={isLoading}
           >
             {isLoading ? 'Ověřuji...' : 'Ověřit'}
