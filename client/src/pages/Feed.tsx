@@ -90,7 +90,7 @@ export default function Feed() {
     { enabled: !!selectedPostId }
   );
 
-  const addComment = trpc.feed.addComment.useMutation({
+  const addComment = trpc.feed.createComment.useMutation({
     onSuccess: () => {
       setNewComment("");
       refetchComments();

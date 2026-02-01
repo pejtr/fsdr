@@ -399,6 +399,7 @@ export const comments = mysqlTable("comments", {
   videoId: int("videoId"), // null if comment on post
   parentId: int("parentId"), // for replies
   content: text("content").notNull(),
+  timestamp: int("timestamp"), // video timestamp in seconds (null for non-timestamped comments)
   likeCount: int("likeCount").default(0),
   isEdited: boolean("isEdited").default(false),
   // YouTube integration
@@ -765,3 +766,16 @@ export const ragDocuments = mysqlTable("ragDocuments", {
 
 export type RagDocument = typeof ragDocuments.$inferSelect;
 export type InsertRagDocument = typeof ragDocuments.$inferInsert;
+
+// Video reactions (emoji reactions at specific timestamps)
+export const videoReactions = mysqlTable("videoReactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  videoId: int("videoId").notNull(),
+  reactionType: mysqlEnum("reactionType", ["love", "laugh", "wow", "sad", "fire", "clap", "thinking", "heart_eyes"]).notNull(),
+  timestamp: int("timestamp").notNull(), // video timestamp in seconds
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VideoReaction = typeof videoReactions.$inferSelect;
+export type InsertVideoReaction = typeof videoReactions.$inferInsert;

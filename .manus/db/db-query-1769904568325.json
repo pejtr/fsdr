@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE comments ADD COLUMN timestamp INT NULL COMMENT 'video timestamp in seconds';\n\nCREATE TABLE IF NOT EXISTS videoReactions (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  userId INT NOT NULL,\n  videoId INT NOT NULL,\n  reactionType ENUM('love', 'laugh', 'wow', 'sad', 'fire', 'clap', 'thinking', 'heart_eyes') NOT NULL,\n  timestamp INT NOT NULL COMMENT 'video timestamp in seconds',\n  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_video_timestamp (videoId, timestamp),\n  INDEX idx_user_video (userId, videoId)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.45407ed3fd11 --database WXcU8yEV3e5gcodvpCzco6 --execute ALTER TABLE comments ADD COLUMN timestamp INT NULL COMMENT 'video timestamp in seconds';\n\nCREATE TABLE IF NOT EXISTS videoReactions (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  userId INT NOT NULL,\n  videoId INT NOT NULL,\n  reactionType ENUM('love', 'laugh', 'wow', 'sad', 'fire', 'clap', 'thinking', 'heart_eyes') NOT NULL,\n  timestamp INT NOT NULL COMMENT 'video timestamp in seconds',\n  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_video_timestamp (videoId, timestamp),\n  INDEX idx_user_video (userId, videoId)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1041
+}

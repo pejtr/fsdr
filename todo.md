@@ -152,3 +152,36 @@
 - [ ] Importovat YouTube videa do databáze
 - [ ] Redesign homepage jako Patreon-style profil (membership tiers, community posts)
 - [x] Hero sekce - nadpis FEMSIDER 100% průhledný, posunout popis a tlačítko níže
+
+## Interactive Video Experience Features
+
+### Database Schema
+- [x] Přidat timestamp sloupec do comments tabulky
+- [x] Vytvořit videoReactions tabulku (userId, videoId, reactionType, timestamp)
+- [x] Přidat indexy pro rychlé dotazy na timestamp
+
+### Backend API
+- [x] Endpoint pro vytvoření timestamped comment
+- [x] Endpoint pro získání comments podle timestamp range
+- [x] Endpoint pro přidání emoji reakce na konkrétní timestamp
+- [x] Endpoint pro získání všech reakcí pro video
+- [x] Endpoint pro získání reakcí podle timestamp range
+
+### Frontend - Video Player
+- [x] Interaktivní timeline s indikátory komentářů a reakcí
+- [x] Hover preview komentářů na timeline
+- [x] Automatické zobrazení komentářů při dosažení timestamp
+- [x] Emoji reaction picker s timestamp capture
+- [x] Vizuální "heat map" reakcí na timeline
+
+### Frontend - Comments UI
+- [x] Timestamped comment input s aktuálním časem videa
+- [x] Click-to-seek na timestamp v komentáři
+- [x] Filtrování komentářů podle timestamp
+- [x] Sorting komentářů (chronologicky vs. podle timestamp)
+
+### Testing
+- [x] Unit testy pro timestamped comments API
+- [x] Unit testy pro reactions API
+- [x] Integration test video player s timeline
+- [x] Test performance při velkém množství komentářů/reakcí

@@ -1175,14 +1175,14 @@ export const appRouter = router({
         }));
         return enriched;
       }),
-    
-    // Add comment
-    addComment: protectedProcedure
+     // Create comment
+    createComment: protectedProcedure
       .input(z.object({
         postId: z.number().optional(),
         videoId: z.number().optional(),
         parentId: z.number().optional(),
         content: z.string().min(1),
+        timestamp: z.number().optional(), // video timestamp in seconds
       }))
       .mutation(async ({ ctx, input }) => {
         if (!input.postId && !input.videoId) {
@@ -1226,6 +1226,75 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const liked = await db.toggleCommentLike(input.commentId, ctx.user.id);
         return { liked };
+      }),
+
+    // Get comments by timestamp range
+    getCommentsByTimestamp: publicProcedure
+      .input(z.object({
+        videoId: z.number(),
+        startTime: z.number(),
+        endTime: z.number(),
+      }))
+      .query(async ({ input }) => {
+        return db.getCommentsByTimestamp(input.videoId, input.startTime, input.endTime);
+      }),
+
+    // Get all timestamped comments for video
+    getTimestampedComments: publicProcedure
+      .input(z.object({ videoId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getTimestampedComments(input.videoId);
+      }),
+  }),
+
+  // ============ VIDEO REACTIONS ============
+  videoReactions: router({
+    // Add reaction at timestamp
+    addReaction: protectedProcedure
+      .input(z.object({
+        videoId: z.number(),
+        reactionType: z.enum(['love', 'laugh', 'wow', 'sad', 'fire', 'clap', 'thinking', 'heart_eyes']),
+        timestamp: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const reactionId = await db.createVideoReaction({
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { reactionId };
+      }),
+
+    // Get reactions for video
+    getReactions: publicProcedure
+      .input(z.object({ videoId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getVideoReactions(input.videoId);
+      }),
+
+    // Get reactions by timestamp range
+    getReactionsByTimestamp: publicProcedure
+      .input(z.object({
+        videoId: z.number(),
+        startTime: z.number(),
+        endTime: z.number(),
+      }))
+      .query(async ({ input }) => {
+        return db.getReactionsByTimestamp(input.videoId, input.startTime, input.endTime);
+      }),
+
+    // Get reaction heatmap (aggregated by second)
+    getReactionHeatmap: publicProcedure
+      .input(z.object({ videoId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getReactionHeatmap(input.videoId);
+      }),
+
+    // Remove reaction
+    removeReaction: protectedProcedure
+      .input(z.object({ reactionId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteVideoReaction(input.reactionId, ctx.user.id);
+        return { success: true };
       }),
   }),
 

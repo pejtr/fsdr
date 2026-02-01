@@ -8,7 +8,9 @@ import {
   transactions, InsertTransaction,
   ageVerifications, InsertAgeVerification,
   videoLikes, InsertVideoLike,
-  moderationFlags, InsertModerationFlag
+  moderationFlags, InsertModerationFlag,
+  comments, InsertComment,
+  videoReactions, InsertVideoReaction
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -1282,14 +1284,12 @@ export async function getYoutubeOverviewStats(userId: number) {
 
 
 // ============ NEWSFEED FUNCTIONS ============
-
 import { 
   posts, InsertPost, Post,
   postLikes, InsertPostLike,
-  comments, InsertComment, Comment,
   commentLikes, InsertCommentLike,
   follows, InsertFollow
-} from "../drizzle/schema";
+} from "../drizzle/schema";;
 
 // Posts
 export async function createPost(post: InsertPost) {
@@ -2093,4 +2093,102 @@ export async function getCommentByYoutubeId(youtubeCommentId: string) {
   
   const result = await db.select().from(comments).where(eq(comments.youtubeCommentId, youtubeCommentId)).limit(1);
   return result[0] || null;
+}
+
+
+// ============ TIMESTAMPED COMMENTS FUNCTIONS ============
+
+export async function getCommentsByTimestamp(videoId: number, startTime: number, endTime: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(comments)
+    .where(
+      and(
+        eq(comments.videoId, videoId),
+        sql`${comments.timestamp} >= ${startTime}`,
+        sql`${comments.timestamp} <= ${endTime}`
+      )
+    )
+    .orderBy(comments.timestamp);
+}
+
+export async function getTimestampedComments(videoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(comments)
+    .where(
+      and(
+        eq(comments.videoId, videoId),
+        isNotNull(comments.timestamp)
+      )
+    )
+    .orderBy(comments.timestamp);
+}
+
+// ============ VIDEO REACTIONS FUNCTIONS ============
+
+export async function createVideoReaction(reaction: InsertVideoReaction) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db.insert(videoReactions).values(reaction);
+  return result[0].insertId;
+}
+
+export async function getVideoReactions(videoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(videoReactions)
+    .where(eq(videoReactions.videoId, videoId))
+    .orderBy(videoReactions.timestamp);
+}
+
+export async function getReactionsByTimestamp(videoId: number, startTime: number, endTime: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(videoReactions)
+    .where(
+      and(
+        eq(videoReactions.videoId, videoId),
+        sql`${videoReactions.timestamp} >= ${startTime}`,
+        sql`${videoReactions.timestamp} <= ${endTime}`
+      )
+    )
+    .orderBy(videoReactions.timestamp);
+}
+
+export async function getReactionHeatmap(videoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Aggregate reactions by second
+  const result = await db.execute(sql`
+    SELECT 
+      timestamp,
+      reactionType,
+      COUNT(*) as count
+    FROM ${videoReactions}
+    WHERE videoId = ${videoId}
+    GROUP BY timestamp, reactionType
+    ORDER BY timestamp
+  `);
+  
+  return result[0] as unknown as Array<{ timestamp: number; reactionType: string; count: number }>;
+}
+
+export async function deleteVideoReaction(reactionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.delete(videoReactions)
+    .where(
+      and(
+        eq(videoReactions.id, reactionId),
+        eq(videoReactions.userId, userId)
+      )
+    );
 }
