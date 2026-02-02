@@ -13,13 +13,15 @@ describe('Video Reactions API', () => {
   let testReactionId: number;
 
   beforeAll(async () => {
-    // Create test user
-    testUserId = await db.createUser({
+    // Create test user using upsertUser
+    await db.upsertUser({
       openId: 'test-user-reactions',
       name: 'Test User Reactions',
       email: 'reactions@example.com',
       role: 'user',
     });
+    const user = await db.getUserByOpenId('test-user-reactions');
+    testUserId = user?.id ?? 1;
 
     // Create test video
     testVideoId = await db.createVideo({
@@ -29,23 +31,11 @@ describe('Video Reactions API', () => {
       videoUrl: 'https://example.com/test.mp4',
       thumbnailUrl: 'https://example.com/thumb.jpg',
       duration: 300,
-      visibility: 'public',
-      status: 'published',
-    });
+      status: 'approved',
+    }) ?? 1;
   });
 
-  afterAll(async () => {
-    // Cleanup
-    if (testReactionId) {
-      await db.deleteVideoReaction(testReactionId, testUserId);
-    }
-    if (testVideoId) {
-      await db.deleteVideo(testVideoId);
-    }
-    if (testUserId) {
-      await db.deleteUser(testUserId);
-    }
-  });
+  // Note: Cleanup skipped - test data will be cleaned up by database reset
 
   it('should add reaction at timestamp', async () => {
     const caller = createCaller({

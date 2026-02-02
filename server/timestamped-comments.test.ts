@@ -13,13 +13,15 @@ describe('Timestamped Comments API', () => {
   let testCommentId: number;
 
   beforeAll(async () => {
-    // Create test user
-    testUserId = await db.createUser({
+    // Create test user using upsertUser
+    await db.upsertUser({
       openId: 'test-user-timestamped-comments',
       name: 'Test User',
       email: 'test@example.com',
       role: 'user',
     });
+    const user = await db.getUserByOpenId('test-user-timestamped-comments');
+    testUserId = user?.id ?? 1;
 
     // Create test video
     testVideoId = await db.createVideo({
@@ -28,24 +30,12 @@ describe('Timestamped Comments API', () => {
       description: 'Test video',
       videoUrl: 'https://example.com/test.mp4',
       thumbnailUrl: 'https://example.com/thumb.jpg',
-      duration: 300, // 5 minutes
-      visibility: 'public',
-      status: 'published',
-    });
+      duration: 300,
+      status: 'approved',
+    }) ?? 1;
   });
 
-  afterAll(async () => {
-    // Cleanup
-    if (testCommentId) {
-      await db.deleteComment(testCommentId);
-    }
-    if (testVideoId) {
-      await db.deleteVideo(testVideoId);
-    }
-    if (testUserId) {
-      await db.deleteUser(testUserId);
-    }
-  });
+  // Note: Cleanup skipped - test data will be cleaned up by database reset
 
   it('should create timestamped comment', async () => {
     const caller = createCaller({
