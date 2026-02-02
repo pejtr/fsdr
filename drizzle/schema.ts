@@ -779,3 +779,180 @@ export const videoReactions = mysqlTable("videoReactions", {
 
 export type VideoReaction = typeof videoReactions.$inferSelect;
 export type InsertVideoReaction = typeof videoReactions.$inferInsert;
+
+
+// Content Categories for expanded platform
+export const contentCategories = mysqlTable("content_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  parentId: int("parentId"),
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ContentCategory = typeof contentCategories.$inferSelect;
+
+// User Profiles Extended for Dating/Community
+export const userProfiles = mysqlTable("user_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  displayName: varchar("displayName", { length: 100 }),
+  pronouns: varchar("pronouns", { length: 50 }),
+  identityType: mysqlEnum("identityType", [
+    "crossdresser", "femboy", "transgender", "non_binary", "questioning", "ally", "other"
+  ]),
+  lookingFor: json("lookingFor"), // ["friendship", "dating", "community", "mentorship"]
+  interests: json("interests"), // ["fashion", "makeup", "transformation", "stories", "videos"]
+  location: varchar("location", { length: 100 }),
+  showLocation: boolean("showLocation").default(false),
+  ageRange: varchar("ageRange", { length: 20 }), // "18-25", "26-35", etc.
+  relationshipStatus: mysqlEnum("relationshipStatus", [
+    "single", "in_relationship", "married", "its_complicated", "prefer_not_say"
+  ]),
+  experienceLevel: mysqlEnum("experienceLevel", [
+    "curious", "beginner", "intermediate", "experienced", "mentor"
+  ]),
+  galleryImages: json("galleryImages"), // Array of image URLs
+  socialLinks: json("socialLinks"), // { twitter, instagram, tiktok, etc. }
+  isPublic: boolean("isPublic").default(true),
+  isVerified: boolean("isVerified").default(false),
+  lastActive: timestamp("lastActive").defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+
+// Dating Matches
+export const datingMatches = mysqlTable("dating_matches", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  targetUserId: int("targetUserId").notNull(),
+  action: mysqlEnum("action", ["like", "super_like", "pass"]).notNull(),
+  isMatch: boolean("isMatch").default(false),
+  matchedAt: timestamp("matchedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DatingMatch = typeof datingMatches.$inferSelect;
+
+// Dating Messages
+export const datingMessages = mysqlTable("dating_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  matchId: int("matchId").notNull(),
+  senderId: int("senderId").notNull(),
+  content: text("content").notNull(),
+  isRead: boolean("isRead").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DatingMessage = typeof datingMessages.$inferSelect;
+
+// Style Guides / Tutorials
+export const styleGuides = mysqlTable("style_guides", {
+  id: int("id").autoincrement().primaryKey(),
+  authorId: int("authorId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  coverImage: text("coverImage"),
+  categoryId: int("categoryId"),
+  tags: json("tags"),
+  difficulty: mysqlEnum("difficulty", ["beginner", "intermediate", "advanced"]),
+  readTime: int("readTime"), // minutes
+  viewCount: int("viewCount").default(0),
+  likeCount: int("likeCount").default(0),
+  isPremium: boolean("isPremium").default(false),
+  isPublished: boolean("isPublished").default(false),
+  publishedAt: timestamp("publishedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StyleGuide = typeof styleGuides.$inferSelect;
+
+// Affiliate Products
+export const affiliateProducts = mysqlTable("affiliate_products", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  affiliateUrl: text("affiliateUrl").notNull(),
+  categoryId: int("categoryId"),
+  price: decimal("price", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("EUR"),
+  commission: decimal("commission", { precision: 5, scale: 2 }), // percentage
+  merchant: varchar("merchant", { length: 100 }),
+  isActive: boolean("isActive").default(true),
+  clickCount: int("clickCount").default(0),
+  conversionCount: int("conversionCount").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AffiliateProduct = typeof affiliateProducts.$inferSelect;
+
+// Premium Subscriptions
+export const premiumSubscriptions = mysqlTable("premium_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  tier: mysqlEnum("tier", ["supporter", "premium", "vip", "creator"]).notNull(),
+  status: mysqlEnum("status", ["active", "cancelled", "expired", "paused"]).default("active"),
+  priceMonthly: decimal("priceMonthly", { precision: 10, scale: 2 }),
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "yearly"]).default("monthly"),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  cancelledAt: timestamp("cancelledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PremiumSubscription = typeof premiumSubscriptions.$inferSelect;
+
+// Community Forums
+export const forumCategories = mysqlTable("forum_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const forumTopics = mysqlTable("forum_topics", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull(),
+  authorId: int("authorId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  isPinned: boolean("isPinned").default(false),
+  isLocked: boolean("isLocked").default(false),
+  viewCount: int("viewCount").default(0),
+  replyCount: int("replyCount").default(0),
+  lastReplyAt: timestamp("lastReplyAt"),
+  lastReplyBy: int("lastReplyBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const forumReplies = mysqlTable("forum_replies", {
+  id: int("id").autoincrement().primaryKey(),
+  topicId: int("topicId").notNull(),
+  authorId: int("authorId").notNull(),
+  content: text("content").notNull(),
+  likeCount: int("likeCount").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ForumCategory = typeof forumCategories.$inferSelect;
+export type ForumTopic = typeof forumTopics.$inferSelect;
+export type ForumReply = typeof forumReplies.$inferSelect;

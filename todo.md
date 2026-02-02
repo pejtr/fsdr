@@ -185,3 +185,34 @@
 - [x] Unit testy pro reactions API
 - [x] Integration test video player s timeline
 - [x] Test performance při velkém množství komentářů/reakcí
+
+
+## Platform Expansion - Crossdresser/Femboy Integration
+
+### Monetization Plan
+- [x] Vytvořit detailní monetizační strategii
+- [x] Definovat premium tiers a pricing
+- [x] Navrhnout affiliate program strukturu
+- [x] Plán pro dating/social features monetizaci
+
+### Database Schema
+- [x] Přidat kategorie pro crossdresser/femboy obsah
+- [x] Rozšířit user profiles o nové atributy
+- [x] Vytvořit tabulky pro dating/matching features
+
+### Crossdresser Community Section
+- [x] Vytvořit Crossdresser stránku s galeriemi
+- [x] Implementovat makeover tutorials sekci
+- [x] Přidat fashion/style guides
+- [x] Dating/social features UI
+
+### Femboy Hub Section
+- [x] Vytvořit Femboy Hub stránku
+- [x] Style inspiration galerie
+- [x] Creator profiles showcase
+- [x] Community forums
+
+### Navigation & Homepage
+- [x] Aktualizovat navigaci pro nové sekce
+- [x] Redesign homepage pro rozšířený koncept
+- [x] Přidat category filtering

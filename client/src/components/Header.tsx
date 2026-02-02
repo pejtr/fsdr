@@ -83,10 +83,11 @@ export default function Header() {
 
   const navLinks = [
     { href: "/browse", label: "Procházet" },
+    { href: "/crossdresser", label: "Crossdresser" },
+    { href: "/femboy", label: "Femboy Hub" },
     { href: "/gallery", label: "Galerie" },
     ...(isAuthenticated && user?.role === 'creator' ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(isAuthenticated ? [{ href: "/subscriptions", label: "Odběry" }] : []),
-    ...(isAuthenticated ? [{ href: "/affiliate", label: "Affiliate" }] : []),
     ...(user?.role === 'admin' ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 

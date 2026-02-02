@@ -21,6 +21,8 @@ import Messages from "./pages/Messages";
 import AIAssistant from "./pages/AIAssistant";
 import VideoRecreateStudio from "./pages/VideoRecreateStudio";
 import Gallery from "./pages/Gallery";
+import CrossdresserCommunity from "./pages/CrossdresserCommunity";
+import FemboyHub from "./pages/FemboyHub";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 function Router() {
@@ -30,6 +32,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/browse" component={Browse} />
+      <Route path="/crossdresser" component={CrossdresserCommunity} />
+      <Route path="/femboy" component={FemboyHub} />
       <Route path="/video/:id" component={VideoPage} />
       <Route path="/creator/:id" component={CreatorProfile} />
       <Route path="/verify-age" component={AgeVerification} />

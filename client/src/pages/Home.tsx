@@ -275,6 +275,72 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Community Sections */}
+      <section className="py-20 border-t border-[oklch(0.6_0.15_180)]/20">
+        <div className="container">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+            Prozkoumej naše <span className="symbiote-text-gradient">komunity</span>
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Připoj se k tisícům členů, kteří sdílejí svou cestu, styl a příběhy
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Crossdresser Community Card */}
+            <Link href="/crossdresser">
+              <div className="group relative overflow-hidden rounded-2xl border border-pink-500/30 bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-transparent p-8 hover:border-pink-500/50 transition-all cursor-pointer">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform" />
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center mb-4">
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    Crossdresser Community
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Style guides, makeover tutorials, fashion tips a podpůrná komunita pro crossdressery.
+                  </p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" /> 50K+ členů
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Heart className="w-4 h-4" /> 200+ guides
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Femboy Hub Card */}
+            <Link href="/femboy">
+              <div className="group relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-transparent p-8 hover:border-blue-500/50 transition-all cursor-pointer">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform" />
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mb-4">
+                    <Heart className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Femboy Hub
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Style inspiration, creator profiles, trending content a spojte se s femboy komunitou.
+                  </p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" /> 75K+ členů
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Play className="w-4 h-4" /> 10K+ videí
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 border-t border-[oklch(0.6_0.15_180)]/20">
         <div className="container">
