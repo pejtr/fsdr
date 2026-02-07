@@ -86,6 +86,7 @@ export default function Header() {
     { href: "/photos", label: "Fotogalerie" },
     { href: "/forum", label: "Fórum" },
     { href: "/crossdresser", label: "Crossdresser" },
+    { href: "/leaderboard", label: "Leaderboard" },
     { href: "/femboy", label: "Femboy Hub" },
     ...(isAuthenticated && user?.role === 'creator' ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(isAuthenticated ? [{ href: "/subscriptions", label: "Odběry" }] : []),

@@ -497,7 +497,7 @@ export type InsertChatbotMessage = typeof chatbotMessages.$inferInsert;
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  type: mysqlEnum("type", ["new_follower", "new_subscriber", "new_message", "new_comment", "new_like", "payout", "badge", "system"]).notNull(),
+  type: mysqlEnum("type", ["new_follower", "new_subscriber", "new_message", "new_comment", "new_like", "payout", "badge", "system", "forum_reply", "forum_mention", "verification_approved", "verification_rejected", "rank_up", "new_badge"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content"),
   linkUrl: varchar("linkUrl", { length: 512 }),
@@ -1033,3 +1033,50 @@ export const transformationShowcase = mysqlTable("transformation_showcase", {
 });
 
 export type TransformationShowcase = typeof transformationShowcase.$inferSelect;
+
+
+// ============ CONTENT REPORTS ============
+export const contentReports = mysqlTable("contentReports", {
+  id: int("id").autoincrement().primaryKey(),
+  reporterId: int("reporterId").notNull(),
+  contentType: mysqlEnum("contentType", ["forum_topic", "forum_reply", "photo", "comment", "video", "profile"]).notNull(),
+  contentId: int("contentId").notNull(),
+  reason: mysqlEnum("reason", ["spam", "harassment", "inappropriate", "misinformation", "copyright", "other"]).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["pending", "reviewed", "resolved", "dismissed"]).default("pending").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNote: text("reviewNote"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ContentReport = typeof contentReports.$inferSelect;
+
+// ============ USER REPUTATION & GAMIFICATION ============
+export const userReputation = mysqlTable("userReputation", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  points: int("points").default(0).notNull(),
+  rank: mysqlEnum("rank", ["newcomer", "member", "contributor", "expert", "legend"]).default("newcomer").notNull(),
+  postsCount: int("postsCount").default(0).notNull(),
+  repliesCount: int("repliesCount").default(0).notNull(),
+  upvotesReceived: int("upvotesReceived").default(0).notNull(),
+  likesReceived: int("likesReceived").default(0).notNull(),
+  photosUploaded: int("photosUploaded").default(0).notNull(),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type UserReputation = typeof userReputation.$inferSelect;
+
+export const badgeDefinitions = mysqlTable("badgeDefinitions", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 500 }).notNull(),
+  icon: varchar("icon", { length: 50 }).notNull(),
+  category: mysqlEnum("category", ["milestone", "community", "content", "special"]).notNull(),
+  requirement: varchar("requirement", { length: 255 }).notNull(),
+  requiredValue: int("requiredValue").default(1).notNull(),
+  pointsReward: int("pointsReward").default(10).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type BadgeDefinition = typeof badgeDefinitions.$inferSelect;

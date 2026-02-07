@@ -26,6 +26,7 @@ import FemboyHub from "./pages/FemboyHub";
 import UserProfile from "./pages/UserProfile";
 import PhotoGallery from "./pages/PhotoGallery";
 import CommunityForum from "./pages/CommunityForum";
+import Leaderboard from "./pages/Leaderboard";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/femboy" component={FemboyHub} />
       <Route path="/photos" component={PhotoGallery} />
       <Route path="/forum" component={CommunityForum} />
+      <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/profile/:id" component={UserProfile} />
       <Route path="/video/:id" component={VideoPage} />
       <Route path="/creator/:id" component={CreatorProfile} />

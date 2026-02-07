@@ -269,3 +269,30 @@
 - [x] Zobrazení verified badge na profilu a ve fóru
 - [x] Admin endpoint pro udělení verified statusu
 - [x] Žádost o ověření profilu (verification request)
+
+## Push Notifications, Moderation Dashboard & Gamification
+
+### Push Notifications
+- [x] DB schéma pro notifikace (notifications tabulka)
+- [x] Backend endpointy pro notifikace (list, markRead, markAllRead)
+- [x] Automatické notifikace při odpovědi na téma
+- [x] @mention detekce a notifikace
+- [x] Notification bell s počtem nepřečtených v headeru
+
+### Moderation Dashboard
+- [x] Admin stránka pro správu verification requestů
+- [x] Reportování obsahu (příspěvky, komentáře, fotky)
+- [x] Admin přehled reportovaného obsahu
+- [x] Akce: schválit, zamítnout, smazat, banovat
+
+### Gamification System
+- [x] DB schéma pro reputaci a odznaky
+- [x] Reputační body za akce (post, reply, upvote, like)
+- [x] Systém ranků (Newcomer, Member, Contributor, Expert, Legend)
+- [x] Odznaky za milníky (první post, 100 upvotes, verified, atd.)
+- [x] Zobrazení ranku a odznaků na profilu a ve fóru
+- [x] Leaderboard stránka s žebříčkem reputace
+- [x] Seed script pro badge definitions
+- [x] Content report systém (submit, review, resolve, dismiss)
+- [x] User management v admin panelu (role change, ban)
+- [x] 100 unit testů prošlo

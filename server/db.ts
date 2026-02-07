@@ -2574,3 +2574,277 @@ export async function setUserVerified(userId: number, verified: boolean) {
     );
   }
 }
+
+
+// ============ MENTION DETECTION ============
+export async function findUsersByNames(names: string[]) {
+  if (names.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
+  const allUsers = await db.select({ id: users.id, name: users.name }).from(users);
+  return allUsers.filter(u => u.name && names.some(n => u.name!.toLowerCase() === n.toLowerCase()));
+}
+
+export function extractMentions(text: string): string[] {
+  const mentionRegex = /@(\w+)/g;
+  const mentions: string[] = [];
+  let match;
+  while ((match = mentionRegex.exec(text)) !== null) {
+    mentions.push(match[1]);
+  }
+  return Array.from(new Set(mentions));
+}
+
+// ============ CONTENT REPORTS ============
+import { contentReports, userReputation, badgeDefinitions } from "../drizzle/schema";
+
+export async function createContentReport(data: {
+  reporterId: number;
+  contentType: "forum_topic" | "forum_reply" | "photo" | "comment" | "video" | "profile";
+  contentId: number;
+  reason: "spam" | "harassment" | "inappropriate" | "misinformation" | "copyright" | "other";
+  description?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(contentReports).values(data);
+  return result[0].insertId;
+}
+
+export async function getContentReports(status?: string, limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  if (status && status !== 'all') {
+    return db.select().from(contentReports)
+      .where(eq(contentReports.status, status as any))
+      .orderBy(desc(contentReports.createdAt))
+      .limit(limit).offset(offset);
+  }
+  return db.select().from(contentReports)
+    .orderBy(desc(contentReports.createdAt))
+    .limit(limit).offset(offset);
+}
+
+export async function getContentReportCounts() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    status: contentReports.status,
+    count: sql<number>`count(*)`,
+  }).from(contentReports).groupBy(contentReports.status);
+}
+
+export async function reviewContentReport(reportId: number, reviewedBy: number, status: "reviewed" | "resolved" | "dismissed", reviewNote?: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(contentReports).set({
+    status,
+    reviewedBy,
+    reviewNote: reviewNote || null,
+    reviewedAt: new Date(),
+  }).where(eq(contentReports.id, reportId));
+}
+
+// ============ USER REPUTATION & GAMIFICATION ============
+export async function getOrCreateReputation(userId: number) {
+  const db = await getDb();
+  if (!db) return { id: 0, userId, points: 0, rank: "newcomer" as const, postsCount: 0, repliesCount: 0, upvotesReceived: 0, likesReceived: 0, photosUploaded: 0, lastActivityAt: new Date(), createdAt: new Date() };
+  const existing = await db.select().from(userReputation).where(eq(userReputation.userId, userId)).limit(1);
+  if (existing.length > 0) return existing[0];
+  await db.insert(userReputation).values({ userId, points: 0 });
+  const created = await db.select().from(userReputation).where(eq(userReputation.userId, userId)).limit(1);
+  return created[0];
+}
+
+export async function addReputationPoints(userId: number, action: string, points: number) {
+  const rep = await getOrCreateReputation(userId);
+  const newPoints = rep.points + points;
+  
+  let newRank: "newcomer" | "member" | "contributor" | "expert" | "legend" = "newcomer";
+  if (newPoints >= 1000) newRank = "legend";
+  else if (newPoints >= 500) newRank = "expert";
+  else if (newPoints >= 200) newRank = "contributor";
+  else if (newPoints >= 50) newRank = "member";
+  
+  const db = await getDb();
+  if (!db) return { newPoints, newRank, rankChanged: false };
+  
+  const updateData: Record<string, any> = {
+    points: newPoints,
+    rank: newRank,
+    lastActivityAt: new Date(),
+  };
+  
+  if (action === 'post') updateData.postsCount = rep.postsCount + 1;
+  if (action === 'reply') updateData.repliesCount = rep.repliesCount + 1;
+  if (action === 'upvote_received') updateData.upvotesReceived = rep.upvotesReceived + 1;
+  if (action === 'like_received') updateData.likesReceived = rep.likesReceived + 1;
+  if (action === 'photo_upload') updateData.photosUploaded = rep.photosUploaded + 1;
+  
+  await db.update(userReputation).set(updateData).where(eq(userReputation.userId, userId));
+  
+  const rankChanged = rep.rank !== newRank;
+  
+  // Check for new badges
+  const updatedRep = await getOrCreateReputation(userId);
+  await checkAndAwardGamificationBadges(userId, updatedRep);
+  
+  // Notify on rank up
+  if (rankChanged) {
+    await createNotification({
+      userId,
+      type: 'rank_up',
+      title: `Rank Up: ${newRank.charAt(0).toUpperCase() + newRank.slice(1)}!`,
+      content: `Congratulations! You've reached the ${newRank} rank with ${newPoints} reputation points.`,
+      linkUrl: '/leaderboard',
+    });
+  }
+  
+  return { newPoints, newRank, rankChanged };
+}
+
+export async function checkAndAwardGamificationBadges(userId: number, rep: any) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allBadges = await db.select().from(badgeDefinitions).where(eq(badgeDefinitions.isActive, true));
+  const earnedBadges = await db.select().from(userBadges).where(eq(userBadges.userId, userId));
+  const earnedBadgeIds = new Set(earnedBadges.map(b => b.badgeId));
+  
+  const newBadges: any[] = [];
+  for (const badge of allBadges) {
+    if (earnedBadgeIds.has(badge.id)) continue;
+    
+    let currentValue = 0;
+    switch (badge.requirement) {
+      case 'postsCount': currentValue = rep.postsCount; break;
+      case 'repliesCount': currentValue = rep.repliesCount; break;
+      case 'likesReceived': currentValue = rep.likesReceived; break;
+      case 'upvotesReceived': currentValue = rep.upvotesReceived; break;
+      case 'photosUploaded': currentValue = rep.photosUploaded; break;
+      case 'points': currentValue = rep.points; break;
+      default: continue;
+    }
+    
+    if (currentValue >= badge.requiredValue) {
+      await db.insert(userBadges).values({ userId, badgeId: badge.id });
+      newBadges.push(badge);
+      
+      // Award bonus points
+      await db.update(userReputation).set({
+        points: sql`points + ${badge.pointsReward}`,
+      }).where(eq(userReputation.userId, userId));
+      
+      // Notify user
+      await createNotification({
+        userId,
+        type: 'new_badge',
+        title: `New Badge: ${badge.name}`,
+        content: `You earned the "${badge.name}" badge! ${badge.description}`,
+        linkUrl: '/profile',
+      });
+    }
+  }
+  return newBadges;
+}
+
+export async function getReputationLeaderboard(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    userId: userReputation.userId,
+    points: userReputation.points,
+    rank: userReputation.rank,
+    postsCount: userReputation.postsCount,
+    repliesCount: userReputation.repliesCount,
+    upvotesReceived: userReputation.upvotesReceived,
+    likesReceived: userReputation.likesReceived,
+    photosUploaded: userReputation.photosUploaded,
+  }).from(userReputation)
+    .orderBy(desc(userReputation.points))
+    .limit(limit);
+}
+
+export async function getUserReputation(userId: number) {
+  return getOrCreateReputation(userId);
+}
+
+export async function getAllBadgeDefinitions() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(badgeDefinitions).where(eq(badgeDefinitions.isActive, true));
+}
+
+export async function getUserBadgesWithDetails(userId: number) {
+  const earned = await getUserBadges(userId);
+  const allBadges = await getAllBadgeDefinitions();
+  return allBadges.map(badge => ({
+    ...badge,
+    earned: earned.some((e: any) => e.badgeId === badge.id),
+    earnedAt: earned.find((e: any) => e.badgeId === badge.id)?.earnedAt || null,
+  }));
+}
+
+export async function getPendingVerificationRequests(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  const results = await db.execute(
+    sql`SELECT up.userId, up.verificationStatus, up.displayName, u.name, u.avatarUrl, u.email
+        FROM user_profiles up JOIN users u ON up.userId = u.id
+        WHERE up.verificationStatus = 'pending'
+        ORDER BY up.createdAt DESC LIMIT ${limit}`
+  );
+  return (results as any)[0] ?? [];
+}
+
+export async function getAllUsers(limit = 100, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    avatarUrl: users.avatarUrl,
+    createdAt: users.createdAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(users).orderBy(desc(users.createdAt)).limit(limit).offset(offset);
+}
+
+export async function banUser(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Set role to user and add a ban flag via bio
+  await db.update(users).set({ role: 'user', bio: '[BANNED]' }).where(eq(users.id, userId));
+}
+
+export async function seedBadgeDefinitions() {
+  const db = await getDb();
+  if (!db) return;
+  
+  const existing = await db.select().from(badgeDefinitions).limit(1);
+  if (existing.length > 0) return; // Already seeded
+  
+  const badges = [
+    { name: "First Post", description: "Created your first forum topic", icon: "📝", category: "milestone" as const, requirement: "postsCount", requiredValue: 1, pointsReward: 10 },
+    { name: "Prolific Writer", description: "Created 10 forum topics", icon: "✍️", category: "milestone" as const, requirement: "postsCount", requiredValue: 10, pointsReward: 50 },
+    { name: "Forum Legend", description: "Created 50 forum topics", icon: "🏆", category: "milestone" as const, requirement: "postsCount", requiredValue: 50, pointsReward: 200 },
+    { name: "Helpful Reply", description: "Posted your first reply", icon: "💬", category: "community" as const, requirement: "repliesCount", requiredValue: 1, pointsReward: 10 },
+    { name: "Community Helper", description: "Posted 25 replies", icon: "🤝", category: "community" as const, requirement: "repliesCount", requiredValue: 25, pointsReward: 75 },
+    { name: "Reply Master", description: "Posted 100 replies", icon: "🎯", category: "community" as const, requirement: "repliesCount", requiredValue: 100, pointsReward: 300 },
+    { name: "First Like", description: "Received your first like", icon: "❤️", category: "community" as const, requirement: "likesReceived", requiredValue: 1, pointsReward: 5 },
+    { name: "Popular", description: "Received 50 likes", icon: "🌟", category: "community" as const, requirement: "likesReceived", requiredValue: 50, pointsReward: 100 },
+    { name: "Influencer", description: "Received 200 likes", icon: "👑", category: "community" as const, requirement: "likesReceived", requiredValue: 200, pointsReward: 500 },
+    { name: "Upvote Magnet", description: "Received 10 upvotes on posts", icon: "⬆️", category: "community" as const, requirement: "upvotesReceived", requiredValue: 10, pointsReward: 30 },
+    { name: "Top Contributor", description: "Received 100 upvotes", icon: "🔥", category: "community" as const, requirement: "upvotesReceived", requiredValue: 100, pointsReward: 250 },
+    { name: "Photographer", description: "Uploaded your first photo", icon: "📸", category: "content" as const, requirement: "photosUploaded", requiredValue: 1, pointsReward: 10 },
+    { name: "Gallery Star", description: "Uploaded 20 photos", icon: "🎨", category: "content" as const, requirement: "photosUploaded", requiredValue: 20, pointsReward: 100 },
+    { name: "Rising Star", description: "Earned 100 reputation points", icon: "⭐", category: "milestone" as const, requirement: "points", requiredValue: 100, pointsReward: 20 },
+    { name: "Veteran", description: "Earned 500 reputation points", icon: "🎖️", category: "milestone" as const, requirement: "points", requiredValue: 500, pointsReward: 50 },
+    { name: "Legend", description: "Earned 1000 reputation points", icon: "👑", category: "special" as const, requirement: "points", requiredValue: 1000, pointsReward: 100 },
+  ];
+  
+  for (const badge of badges) {
+    await db.insert(badgeDefinitions).values(badge);
+  }
+}

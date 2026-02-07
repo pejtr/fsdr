@@ -2092,6 +2092,8 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
           userId: ctx.user.id,
           ...input,
         });
+        // Award reputation for photo upload
+        await db.addReputationPoints(ctx.user.id, 'photo_upload', 2);
         return { photoId };
       }),
 
@@ -2106,6 +2108,13 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
       .input(z.object({ photoId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const liked = await db.togglePhotoLike(input.photoId, ctx.user.id);
+        // Award reputation to photo owner for receiving a like
+        if (liked) {
+          const photo = await db.getPhotoById(input.photoId);
+          if (photo && photo.userId !== ctx.user.id) {
+            await db.addReputationPoints(photo.userId, 'like_received', 1);
+          }
+        }
         return { liked };
       }),
 
@@ -2190,6 +2199,28 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
           title: input.title,
           content: input.content,
         });
+
+        // Detect @mentions and notify
+        const mentions = db.extractMentions(input.content);
+        if (mentions.length > 0) {
+          const mentionedUsers = await db.findUsersByNames(mentions);
+          for (const mu of mentionedUsers) {
+            if (mu.id !== ctx.user.id) {
+              await db.createNotification({
+                userId: mu.id,
+                type: 'forum_mention',
+                title: 'You were mentioned in a new topic',
+                content: `${ctx.user.name || 'Someone'} mentioned you in "${input.title}"`,
+                linkUrl: `/forum/topic/${topicId}`,
+                relatedUserId: ctx.user.id,
+              });
+            }
+          }
+        }
+
+        // Award reputation points for creating topic
+        await db.addReputationPoints(ctx.user.id, 'post', 5);
+
         return { topicId };
       }),
 
@@ -2213,6 +2244,40 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
           authorId: ctx.user.id,
           content: input.content,
         });
+
+        // Notify topic author about new reply
+        if (topic.authorId && topic.authorId !== ctx.user.id) {
+          await db.createNotification({
+            userId: topic.authorId,
+            type: 'forum_reply',
+            title: 'New reply to your topic',
+            content: `${ctx.user.name || 'Someone'} replied to "${topic.title}"`,
+            linkUrl: `/forum/topic/${input.topicId}`,
+            relatedUserId: ctx.user.id,
+          });
+        }
+
+        // Detect @mentions and notify
+        const mentions = db.extractMentions(input.content);
+        if (mentions.length > 0) {
+          const mentionedUsers = await db.findUsersByNames(mentions);
+          for (const mu of mentionedUsers) {
+            if (mu.id !== ctx.user.id) {
+              await db.createNotification({
+                userId: mu.id,
+                type: 'forum_mention',
+                title: 'You were mentioned',
+                content: `${ctx.user.name || 'Someone'} mentioned you in "${topic.title}"`,
+                linkUrl: `/forum/topic/${input.topicId}`,
+                relatedUserId: ctx.user.id,
+              });
+            }
+          }
+        }
+
+        // Award reputation points for reply
+        await db.addReputationPoints(ctx.user.id, 'reply', 3);
+
         return { replyId };
       }),
 
@@ -2229,6 +2294,17 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
           input.replyId || null,
           input.voteType,
         );
+
+        // Award reputation to the content author for upvotes
+        if (input.voteType === 'upvote' && result === 'upvote') {
+          if (input.topicId) {
+            const topic = await db.getForumTopicById(input.topicId);
+            if (topic && topic.authorId && topic.authorId !== ctx.user.id) {
+              await db.addReputationPoints(topic.authorId, 'upvote_received', 2);
+            }
+          }
+        }
+
         return { voteType: result };
       }),
   }),
@@ -2327,6 +2403,142 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
         await db.setUserVerified(input.userId, false);
         return { success: true };
       }),
+  }),
+
+  // ============ MODERATION DASHBOARD ============
+  moderation: router({
+    // Get content reports
+    getReports: adminProcedure
+      .input(z.object({ status: z.string().default('all'), limit: z.number().default(50), offset: z.number().default(0) }))
+      .query(async ({ input }) => {
+        const reports = await db.getContentReports(input.status, input.limit, input.offset);
+        // Enrich with reporter info
+        const enriched = await Promise.all(reports.map(async (r: any) => {
+          const reporter = await db.getUserById(r.reporterId);
+          const reviewer = r.reviewedBy ? await db.getUserById(r.reviewedBy) : null;
+          return { ...r, reporterName: reporter?.name || 'Unknown', reviewerName: reviewer?.name || null };
+        }));
+        return enriched;
+      }),
+
+    // Get report counts by status
+    getReportCounts: adminProcedure.query(async () => {
+      return db.getContentReportCounts();
+    }),
+
+    // Review a report
+    reviewReport: adminProcedure
+      .input(z.object({
+        reportId: z.number(),
+        status: z.enum(['reviewed', 'resolved', 'dismissed']),
+        reviewNote: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.reviewContentReport(input.reportId, ctx.user.id, input.status, input.reviewNote);
+        return { success: true };
+      }),
+
+    // Submit a content report (any user)
+    submitReport: protectedProcedure
+      .input(z.object({
+        contentType: z.enum(['forum_topic', 'forum_reply', 'photo', 'comment', 'video', 'profile']),
+        contentId: z.number(),
+        reason: z.enum(['spam', 'harassment', 'inappropriate', 'misinformation', 'copyright', 'other']),
+        description: z.string().max(1000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.createContentReport({ reporterId: ctx.user.id, ...input });
+        return { success: true, message: 'Report submitted. Our moderators will review it.' };
+      }),
+
+    // Get pending verification requests
+    getVerificationRequests: adminProcedure.query(async () => {
+      return db.getPendingVerificationRequests();
+    }),
+
+    // Approve/reject verification
+    handleVerification: adminProcedure
+      .input(z.object({ userId: z.number(), approved: z.boolean() }))
+      .mutation(async ({ input }) => {
+        await db.setUserVerified(input.userId, input.approved);
+        // Notify user
+        await db.createNotification({
+          userId: input.userId,
+          type: input.approved ? 'verification_approved' : 'verification_rejected',
+          title: input.approved ? 'Profile Verified!' : 'Verification Declined',
+          content: input.approved
+            ? 'Congratulations! Your profile has been verified. You now have a verified badge.'
+            : 'Your verification request was not approved at this time. Please try again later.',
+          linkUrl: '/profile',
+        });
+        return { success: true };
+      }),
+
+    // Get all users for management
+    getUsers: adminProcedure
+      .input(z.object({ limit: z.number().default(100), offset: z.number().default(0) }))
+      .query(async ({ input }) => {
+        return db.getAllUsers(input.limit, input.offset);
+      }),
+
+    // Ban user
+    banUser: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.banUser(input.userId);
+        return { success: true };
+      }),
+  }),
+
+  // ============ GAMIFICATION ============
+  gamification: router({
+    // Get user reputation
+    getReputation: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getUserReputation(input.userId);
+      }),
+
+    // Get my reputation
+    getMyReputation: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserReputation(ctx.user.id);
+    }),
+
+    // Get leaderboard
+    getLeaderboard: publicProcedure
+      .input(z.object({ limit: z.number().default(20) }))
+      .query(async ({ input }) => {
+        const leaderboard = await db.getReputationLeaderboard(input.limit);
+        // Enrich with user info
+        const enriched = await Promise.all(leaderboard.map(async (entry: any, index: number) => {
+          const user = await db.getUserById(entry.userId);
+          return {
+            position: index + 1,
+            ...entry,
+            userName: user?.name || `User #${entry.userId}`,
+            avatarUrl: user?.avatarUrl,
+          };
+        }));
+        return enriched;
+      }),
+
+    // Get all badge definitions
+    getBadges: publicProcedure.query(async () => {
+      return db.getAllBadgeDefinitions();
+    }),
+
+    // Get user badges with details
+    getUserBadges: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getUserBadgesWithDetails(input.userId);
+      }),
+
+    // Seed badge definitions (admin only)
+    seedBadges: adminProcedure.mutation(async () => {
+      await db.seedBadgeDefinitions();
+      return { success: true, message: 'Badge definitions seeded' };
+    }),
   }),
 });
 

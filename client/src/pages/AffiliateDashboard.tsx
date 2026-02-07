@@ -634,7 +634,7 @@ export default function AffiliateDashboard() {
                         <Button 
                           onClick={() => {
                             const link = document.createElement('a');
-                            link.href = '/banners/banner-collage.png';
+                            link.href = 'https://files.manuscdn.com/user_upload_by_module/session_file/89740521/BivWeHrAndVnQjgu.png';
                             link.download = 'femsider-banner-collage.png';
                             link.click();
                             toast.success('Banner stažen!');
@@ -647,7 +647,7 @@ export default function AffiliateDashboard() {
                         </Button>
                       </div>
                       <img 
-                        src="/banners/banner-collage.png" 
+                        src="https://files.manuscdn.com/user_upload_by_module/session_file/89740521/BivWeHrAndVnQjgu.png" 
                         alt="FEMSIDER Collage Banner" 
                         className="w-full rounded-lg border border-border"
                       />
