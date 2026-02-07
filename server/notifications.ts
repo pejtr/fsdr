@@ -314,6 +314,21 @@ export async function notifyNewFollower(
 }
 
 /**
+ * Send welcome notification to new user
+ */
+export async function sendWelcomeNotification(
+  userId: number,
+  userName: string
+): Promise<boolean> {
+  return sendPushNotification(userId, {
+    type: 'welcome',
+    title: `🎉 Vítej na FEMSIDER, ${userName}!`,
+    content: `Děkujeme za registraci! Tady je tvůj průvodce platformou:\n\n📸 Prohlížej galerii - Objevuj fotky a videa od naší komunity\n💬 Fórum - Zapoj se do diskuzí a poznej nové lidi\n🏆 Gamifikace - Sbírej body, odznaky a stávej se legendou\n💰 Affiliate - Pozvi kamarády a vydělávej provize\n\n🎁 Speciální nabídka: Vyzkoušej Komunita+ se slevou 50%! Odemkni exkluzivní obsah, 4K videa a přímý kontakt s tvůrci.\n\nUžij si to! 🚀`,
+    linkUrl: '/#pricing',
+  });
+}
+
+/**
  * Get unread notification count for user
  */
 export async function getUnreadNotificationCount(userId: number): Promise<number> {

@@ -27,6 +27,7 @@ import UserProfile from "./pages/UserProfile";
 import PhotoGallery from "./pages/PhotoGallery";
 import CommunityForum from "./pages/CommunityForum";
 import Leaderboard from "./pages/Leaderboard";
+import AccountRecovery from "./pages/AccountRecovery";
 import { SocialProofWidget } from "./components/SocialProofWidget";
 
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/video/:id" component={VideoPage} />
       <Route path="/creator/:id" component={CreatorProfile} />
       <Route path="/verify-age" component={AgeVerification} />
+      <Route path="/account-recovery" component={AccountRecovery} />
       
       {/* Protected routes */}
       {isAuthenticated && (

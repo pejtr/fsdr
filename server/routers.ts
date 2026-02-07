@@ -312,6 +312,34 @@ export const appRouter = router({
         const sub = await db.getActiveSubscription(ctx.user.id, input.creatorId);
         return { hasAccess: !!sub };
       }),
+
+    // Premium subscriptions (Stripe-based)
+    myPremiumSubscriptions: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserPremiumSubscriptions(ctx.user.id);
+    }),
+
+    activePremium: protectedProcedure.query(async ({ ctx }) => {
+      return db.getActivePremiumSubscription(ctx.user.id);
+    }),
+
+    cancelPremium: protectedProcedure
+      .input(z.object({ subscriptionId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const sub = await db.getActivePremiumSubscription(ctx.user.id);
+        if (!sub || sub.id !== input.subscriptionId) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Subscription not found' });
+        }
+        // Cancel in Stripe if we have a subscription ID
+        if (sub.stripeSubscriptionId) {
+          try {
+            await stripe.subscriptions.cancel(sub.stripeSubscriptionId);
+          } catch (err: any) {
+            console.error('[Stripe] Cancel error:', err.message);
+          }
+        }
+        await db.cancelPremiumSubscription(input.subscriptionId, ctx.user.id);
+        return { success: true };
+      }),
   }),
 
   // Affiliate program (Multi-tier MLM system)

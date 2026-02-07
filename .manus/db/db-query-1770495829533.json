@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE notifications MODIFY COLUMN type ENUM('new_follower', 'new_subscriber', 'new_message', 'new_comment', 'new_like', 'payout', 'badge', 'system', 'forum_reply', 'forum_mention', 'verification_approved', 'verification_rejected', 'rank_up', 'new_badge', 'welcome', 'password_reset') NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.45407ed3fd11 --database WXcU8yEV3e5gcodvpCzco6 --execute ALTER TABLE notifications MODIFY COLUMN type ENUM('new_follower', 'new_subscriber', 'new_message', 'new_comment', 'new_like', 'payout', 'badge', 'system', 'forum_reply', 'forum_mention', 'verification_approved', 'verification_rejected', 'rank_up', 'new_badge', 'welcome', 'password_reset') NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 260
+}

@@ -612,7 +612,7 @@ export default function AffiliateDashboard() {
                         <Button 
                           onClick={() => {
                             const link = document.createElement('a');
-                            link.href = '/banners/banner-wide.png';
+                            link.href = 'https://files.manuscdn.com/user_upload_by_module/session_file/89740521/qsLFbgwTysuPRJpu.png';
                             link.download = 'femsider-banner-wide.png';
                             link.click();
                             toast.success('Banner stažen!');
@@ -625,7 +625,7 @@ export default function AffiliateDashboard() {
                         </Button>
                       </div>
                       <img 
-                        src="/banners/banner-wide.png" 
+                        src="https://files.manuscdn.com/user_upload_by_module/session_file/89740521/qsLFbgwTysuPRJpu.png" 
                         alt="FEMSIDER Wide Banner" 
                         className="w-full rounded-lg border border-border"
                       />
@@ -667,7 +667,7 @@ export default function AffiliateDashboard() {
                         size="wide" 
                         name="Široký banner" 
                         affiliateCode={stats?.affiliateCode || ''}
-                        imagePath="/banners/banner-wide.png"
+                        imagePath="https://files.manuscdn.com/user_upload_by_module/session_file/89740521/qsLFbgwTysuPRJpu.png"
                       />
                     </div>
                   </div>

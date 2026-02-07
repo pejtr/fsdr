@@ -340,3 +340,25 @@
 - [x] Webhook handler pro payment events
 - [x] Propojení pricing cards s Stripe checkout
 - [x] Success/cancel redirect stránky
+
+## Subscriptions Page, Welcome Email & Forgot Password
+
+### /subscriptions Page
+- [x] Stránka s potvrzením úspěšného nákupu (success state)
+- [x] Přehled aktivních předplatných s detaily (tier, cena, datum obnovení)
+- [x] Možnost zrušení předplatného
+- [x] Historie plateb
+- [x] Upgrade/downgrade mezi tiers
+
+### Welcome Email
+- [x] Automatický uvítací e-mail po registraci (welcome notifikace)
+- [x] Průvodce platformou (klíčové funkce)
+- [x] Nabídka zkušebního předplatného
+- [x] Personalizovaný obsah podle zájmů
+
+### Forgot Password
+- [x] Formulář pro zadání e-mailu (Account Recovery stránka)
+- [x] Google OAuth recovery + kontakt na podporu
+- [x] Account Recovery stránka s FAQ a možnostmi
+- [x] N/A - OAuth systém (bez hesel)
+- [x] N/A - OAuth systém (bez hesel)

@@ -321,11 +321,16 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <a href={getLoginUrl()}>
-                <Button className="symbiote-gradient text-white border-0">
-                  Přihlásit se
-                </Button>
-              </a>
+              <div className="flex items-center gap-2">
+                <Link href="/account-recovery" className="text-xs text-muted-foreground hover:text-primary transition-colors hidden sm:block">
+                  Nemohu se přihlásit
+                </Link>
+                <a href={getLoginUrl()}>
+                  <Button className="symbiote-gradient text-white border-0">
+                    Přihlásit se
+                  </Button>
+                </a>
+              </div>
             )}
 
             {/* Mobile menu button */}

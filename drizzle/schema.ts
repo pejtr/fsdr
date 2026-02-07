@@ -497,7 +497,7 @@ export type InsertChatbotMessage = typeof chatbotMessages.$inferInsert;
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  type: mysqlEnum("type", ["new_follower", "new_subscriber", "new_message", "new_comment", "new_like", "payout", "badge", "system", "forum_reply", "forum_mention", "verification_approved", "verification_rejected", "rank_up", "new_badge"]).notNull(),
+  type: mysqlEnum("type", ["new_follower", "new_subscriber", "new_message", "new_comment", "new_like", "payout", "badge", "system", "forum_reply", "forum_mention", "verification_approved", "verification_rejected", "rank_up", "new_badge", "welcome", "password_reset"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content"),
   linkUrl: varchar("linkUrl", { length: 512 }),

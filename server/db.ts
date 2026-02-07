@@ -16,7 +16,8 @@ import {
   forumCategories, forumTopics, forumReplies, forumVotes,
   transformationShowcase, TransformationShowcase,
   userProfiles, UserProfile,
-  ctaTests, ctaVariants, socialProofEvents
+  ctaTests, ctaVariants, socialProofEvents,
+  premiumSubscriptions, PremiumSubscription
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -2913,4 +2914,62 @@ export async function getAllCtaTests() {
     results.push({ ...test, variants });
   }
   return results;
+}
+
+// ============ PREMIUM SUBSCRIPTIONS ============
+
+export async function getUserPremiumSubscriptions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(premiumSubscriptions)
+    .where(eq(premiumSubscriptions.userId, userId))
+    .orderBy(desc(premiumSubscriptions.createdAt));
+}
+
+export async function getActivePremiumSubscription(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(premiumSubscriptions)
+    .where(and(
+      eq(premiumSubscriptions.userId, userId),
+      eq(premiumSubscriptions.status, "active")
+    ))
+    .limit(1);
+  return results[0] || null;
+}
+
+export async function cancelPremiumSubscription(subscriptionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.update(premiumSubscriptions)
+    .set({ status: "cancelled", cancelledAt: new Date() })
+    .where(and(
+      eq(premiumSubscriptions.id, subscriptionId),
+      eq(premiumSubscriptions.userId, userId)
+    ));
+  return true;
+}
+
+export async function createPremiumSubscription(data: {
+  userId: number;
+  tier: "supporter" | "premium" | "vip" | "creator";
+  priceMonthly: string;
+  billingCycle: "monthly" | "yearly";
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(premiumSubscriptions).values({
+    userId: data.userId,
+    tier: data.tier,
+    status: "active",
+    priceMonthly: data.priceMonthly,
+    billingCycle: data.billingCycle,
+    stripeCustomerId: data.stripeCustomerId || null,
+    stripeSubscriptionId: data.stripeSubscriptionId || null,
+    currentPeriodStart: new Date(),
+    currentPeriodEnd: new Date(Date.now() + (data.billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000),
+  });
+  return result[0]?.insertId;
 }
