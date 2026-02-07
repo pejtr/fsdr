@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,22 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MessageSquare, Eye, Pin, Lock, Plus, ArrowLeft, ThumbsUp, ThumbsDown, 
-  Send, Clock, Users, TrendingUp, ChevronRight 
+  Send, Clock, Users, TrendingUp, ChevronRight, Wifi, WifiOff, CheckCircle2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
-
-// Default forum categories (will be replaced by DB data)
-const DEFAULT_CATEGORIES = [
-  { id: 1, name: "Představení", description: "Představte se komunitě", icon: "👋", color: "#10b981" },
-  { id: 2, name: "Transformace", description: "Sdílejte své TG/TF příběhy", icon: "✨", color: "#8b5cf6" },
-  { id: 3, name: "Crossdressing", description: "Tipy, rady a zkušenosti", icon: "👗", color: "#ec4899" },
-  { id: 4, name: "Makeup & Beauty", description: "Tutoriály a doporučení", icon: "💄", color: "#f59e0b" },
-  { id: 5, name: "Fashion", description: "Móda a styl", icon: "👠", color: "#06b6d4" },
-  { id: 6, name: "Off-topic", description: "Cokoliv jiného", icon: "💬", color: "#6b7280" },
-];
+import { useForumWebSocket } from "@/hooks/useForumWebSocket";
 
 export default function CommunityForum() {
   const { user, isAuthenticated } = useAuth();
@@ -35,11 +26,33 @@ export default function CommunityForum() {
   const [newTopicOpen, setNewTopicOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [newTopic, setNewTopic] = useState({ title: "", content: "", categoryId: 1 });
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const repliesEndRef = useRef<HTMLDivElement>(null);
 
   const utils = trpc.useUtils();
 
+  // WebSocket for real-time features
+  const onNewReply = useCallback((reply: Record<string, unknown>) => {
+    utils.forum.getReplies.invalidate();
+    utils.forum.getTopic.invalidate();
+  }, [utils]);
+
+  const onNewTopic = useCallback((topic: Record<string, unknown>) => {
+    utils.forum.getTopics.invalidate();
+  }, [utils]);
+
+  const { 
+    isConnected, onlineUsers, onlineCount, typingUsers, 
+    sendTyping, sendNewReply, sendNewTopic 
+  } = useForumWebSocket({
+    topicId: selectedTopic || undefined,
+    userId: user?.id,
+    username: user?.name || user?.email || 'Anonymous',
+    onNewReply,
+    onNewTopic,
+  });
+
   const { data: categories = [] } = trpc.forum.getCategories.useQuery();
-  const displayCategories = categories.length > 0 ? categories : DEFAULT_CATEGORIES;
 
   const { data: topicsData } = trpc.forum.getTopics.useQuery(
     { categoryId: selectedCategory || undefined, limit: 30 },
@@ -64,15 +77,20 @@ export default function CommunityForum() {
       setNewTopicOpen(false);
       setNewTopic({ title: "", content: "", categoryId: 1 });
       utils.forum.getTopics.invalidate();
+      sendNewTopic({ topicId: data.topicId });
       if (data.topicId) setSelectedTopic(data.topicId);
     },
   });
 
   const createReply = trpc.forum.createReply.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setReplyText("");
+      sendTyping(false);
       utils.forum.getReplies.invalidate();
       utils.forum.getTopic.invalidate();
+      sendNewReply({ replyId: data.replyId, topicId: selectedTopic });
+      // Scroll to bottom
+      setTimeout(() => repliesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 200);
     },
   });
 
@@ -82,15 +100,63 @@ export default function CommunityForum() {
     },
   });
 
-  // Topic Detail View
+  // Handle typing indicator
+  const handleReplyChange = (value: string) => {
+    setReplyText(value);
+    sendTyping(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => sendTyping(false), 2000);
+  };
+
+  // Auto-scroll when new replies come in
+  useEffect(() => {
+    if (replies.length > 0) {
+      repliesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [replies.length]);
+
+  // Verified badge component
+  const VerifiedBadge = ({ isVerified }: { isVerified?: boolean }) => {
+    if (!isVerified) return null;
+    return (
+      <span className="inline-flex items-center" title="Ověřený profil">
+        <CheckCircle2 className="h-4 w-4 text-[oklch(0.7_0.15_180)] fill-[oklch(0.7_0.15_180)]/20" />
+      </span>
+    );
+  };
+
+  // Topic Detail View with real-time chat
   if (selectedTopic && topicDetail) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container py-8 max-w-4xl">
-          <Button variant="ghost" className="mb-4" onClick={() => setSelectedTopic(null)}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Zpět na fórum
-          </Button>
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" onClick={() => setSelectedTopic(null)}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Zpět na fórum
+            </Button>
+            <div className="flex items-center gap-3">
+              {/* Online indicator */}
+              <div className="flex items-center gap-2 text-sm">
+                {isConnected ? (
+                  <span className="flex items-center gap-1.5 text-green-400">
+                    <Wifi className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Live</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <WifiOff className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Offline</span>
+                  </span>
+                )}
+              </div>
+              {onlineCount > 0 && (
+                <Badge variant="outline" className="border-green-500/30 text-green-400">
+                  <Users className="h-3 w-3 mr-1" /> {onlineCount} online
+                </Badge>
+              )}
+            </div>
+          </div>
 
           {/* Topic Header */}
           <Card className="bg-card/50 border-[oklch(0.6_0.15_180)]/10 mb-6">
@@ -107,13 +173,16 @@ export default function CommunityForum() {
                   </div>
                   <h1 className="text-2xl font-bold mt-2">{topicDetail.title}</h1>
                   <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                    <span>{topicDetail.authorName || 'Anonym'}</span>
+                    <span className="flex items-center gap-1">
+                      {topicDetail.authorName || 'Anonym'}
+                      <VerifiedBadge isVerified={(topicDetail as any).authorVerified} />
+                    </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {formatDistanceToNow(new Date(topicDetail.createdAt), { addSuffix: true, locale: cs })}
                     </span>
-                    <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {topicDetail.viewCount} zobrazení</span>
-                    <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {topicDetail.replyCount} odpovědí</span>
+                    <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {topicDetail.viewCount}</span>
+                    <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {topicDetail.replyCount}</span>
                   </div>
                   <div className="mt-4 prose prose-invert max-w-none">
                     <p className="text-foreground whitespace-pre-wrap">{topicDetail.content}</p>
@@ -123,11 +192,29 @@ export default function CommunityForum() {
             </CardContent>
           </Card>
 
+          {/* Online Users Bar */}
+          {onlineUsers.length > 0 && (
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <span className="text-xs text-muted-foreground">Online:</span>
+              <div className="flex flex-wrap gap-1">
+                {onlineUsers.slice(0, 10).map((u) => (
+                  <Badge key={u.userId} variant="outline" className="text-xs py-0 border-green-500/20 text-green-400/80">
+                    {u.username}
+                  </Badge>
+                ))}
+                {onlineUsers.length > 10 && (
+                  <Badge variant="outline" className="text-xs py-0">+{onlineUsers.length - 10}</Badge>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Replies */}
           <div className="space-y-4 mb-6">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
               Odpovědi ({topicDetail.replyCount})
+              {isConnected && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
             </h3>
 
             {replies.length === 0 ? (
@@ -139,7 +226,7 @@ export default function CommunityForum() {
               </Card>
             ) : (
               replies.map((reply: any, index: number) => (
-                <Card key={reply.id} className="bg-card/50 border-[oklch(0.6_0.15_180)]/10">
+                <Card key={reply.id} className="bg-card/50 border-[oklch(0.6_0.15_180)]/10 animate-in fade-in-50">
                   <CardContent className="p-4">
                     <div className="flex gap-4">
                       <div className="flex flex-col items-center gap-1">
@@ -163,7 +250,10 @@ export default function CommunityForum() {
                             <AvatarImage src={reply.authorAvatar || undefined} />
                             <AvatarFallback className="text-xs">{(reply.authorName || 'U').charAt(0)}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium">{reply.authorName || 'Anonym'}</span>
+                          <span className="text-sm font-medium flex items-center gap-1">
+                            {reply.authorName || 'Anonym'}
+                            <VerifiedBadge isVerified={(reply as any).authorVerified} />
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: cs })}
                           </span>
@@ -176,17 +266,39 @@ export default function CommunityForum() {
                 </Card>
               ))
             )}
+            <div ref={repliesEndRef} />
           </div>
+
+          {/* Typing Indicator */}
+          {typingUsers.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 px-2 text-sm text-muted-foreground animate-in fade-in-50">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>
+                {typingUsers.map(u => u.username).join(', ')} {typingUsers.length === 1 ? 'píše' : 'píšou'}...
+              </span>
+            </div>
+          )}
 
           {/* Reply Input */}
           {isAuthenticated && !topicDetail.isLocked ? (
             <Card className="bg-card/50 border-[oklch(0.6_0.15_180)]/20">
               <CardContent className="p-4">
-                <h4 className="text-sm font-medium mb-2">Vaše odpověď</h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="text-sm font-medium">Vaše odpověď</h4>
+                  {isConnected && (
+                    <span className="text-xs text-green-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Live
+                    </span>
+                  )}
+                </div>
                 <Textarea
                   value={replyText}
-                  onChange={e => setReplyText(e.target.value)}
-                  placeholder="Napište svou odpověď..."
+                  onChange={e => handleReplyChange(e.target.value)}
+                  placeholder="Napište svou odpověď... (ostatní uvidí, že píšete)"
                   rows={4}
                   className="mb-3"
                 />
@@ -228,67 +340,74 @@ export default function CommunityForum() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold symbiote-text-gradient">Komunitní fórum</h1>
+            <h1 className="text-3xl font-bold symbiote-text-gradient">Community Forum</h1>
             <p className="text-muted-foreground mt-1">
-              Diskutujte, sdílejte zkušenosti a najděte přátele
+              Discuss, share experiences and find friends
             </p>
           </div>
-          {isAuthenticated && (
-            <Dialog open={newTopicOpen} onOpenChange={setNewTopicOpen}>
-              <DialogTrigger asChild>
-                <Button className="symbiote-gradient text-white border-0">
-                  <Plus className="h-4 w-4 mr-2" /> Nové téma
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Vytvořit nové téma</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Kategorie</label>
-                    <Select
-                      value={newTopic.categoryId.toString()}
-                      onValueChange={v => setNewTopic(f => ({ ...f, categoryId: parseInt(v) }))}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {displayCategories.map((cat: any) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.icon || '💬'} {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Název tématu</label>
-                    <Input
-                      value={newTopic.title}
-                      onChange={e => setNewTopic(f => ({ ...f, title: e.target.value }))}
-                      placeholder="O čem chcete diskutovat?"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Obsah</label>
-                    <Textarea
-                      value={newTopic.content}
-                      onChange={e => setNewTopic(f => ({ ...f, content: e.target.value }))}
-                      placeholder="Popište své téma podrobněji..."
-                      rows={6}
-                    />
-                  </div>
-                  <Button
-                    className="w-full symbiote-gradient text-white border-0"
-                    onClick={() => createTopic.mutate(newTopic)}
-                    disabled={!newTopic.title.trim() || newTopic.content.trim().length < 10 || createTopic.isPending}
-                  >
-                    {createTopic.isPending ? "Vytvářím..." : "Vytvořit téma"}
+          <div className="flex items-center gap-3">
+            {isConnected && (
+              <Badge variant="outline" className="border-green-500/30 text-green-400">
+                <Wifi className="h-3 w-3 mr-1" /> Live
+              </Badge>
+            )}
+            {isAuthenticated && (
+              <Dialog open={newTopicOpen} onOpenChange={setNewTopicOpen}>
+                <DialogTrigger asChild>
+                  <Button className="symbiote-gradient text-white border-0">
+                    <Plus className="h-4 w-4 mr-2" /> New Topic
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Create New Topic</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Category</label>
+                      <Select
+                        value={newTopic.categoryId.toString()}
+                        onValueChange={v => setNewTopic(f => ({ ...f, categoryId: parseInt(v) }))}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat: any) => (
+                            <SelectItem key={cat.id} value={cat.id.toString()}>
+                              {cat.icon || '💬'} {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Topic Title</label>
+                      <Input
+                        value={newTopic.title}
+                        onChange={e => setNewTopic(f => ({ ...f, title: e.target.value }))}
+                        placeholder="What do you want to discuss?"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Content</label>
+                      <Textarea
+                        value={newTopic.content}
+                        onChange={e => setNewTopic(f => ({ ...f, content: e.target.value }))}
+                        placeholder="Describe your topic in detail..."
+                        rows={6}
+                      />
+                    </div>
+                    <Button
+                      className="w-full symbiote-gradient text-white border-0"
+                      onClick={() => createTopic.mutate(newTopic)}
+                      disabled={!newTopic.title.trim() || newTopic.content.trim().length < 10 || createTopic.isPending}
+                    >
+                      {createTopic.isPending ? "Creating..." : "Create Topic"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
@@ -300,7 +419,7 @@ export default function CommunityForum() {
               </div>
               <div>
                 <div className="text-xl font-bold">{topicsData?.total || 0}</div>
-                <div className="text-xs text-muted-foreground">Témat</div>
+                <div className="text-xs text-muted-foreground">Topics</div>
               </div>
             </CardContent>
           </Card>
@@ -310,8 +429,8 @@ export default function CommunityForum() {
                 <Users className="h-5 w-5 text-purple-400" />
               </div>
               <div>
-                <div className="text-xl font-bold">{displayCategories.length}</div>
-                <div className="text-xs text-muted-foreground">Kategorií</div>
+                <div className="text-xl font-bold">{categories.length}</div>
+                <div className="text-xs text-muted-foreground">Categories</div>
               </div>
             </CardContent>
           </Card>
@@ -321,8 +440,8 @@ export default function CommunityForum() {
                 <TrendingUp className="h-5 w-5 text-amber-400" />
               </div>
               <div>
-                <div className="text-xl font-bold">Aktivní</div>
-                <div className="text-xs text-muted-foreground">Komunita</div>
+                <div className="text-xl font-bold">Active</div>
+                <div className="text-xs text-muted-foreground">Community</div>
               </div>
             </CardContent>
           </Card>
@@ -331,16 +450,16 @@ export default function CommunityForum() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Categories Sidebar */}
           <div className="lg:col-span-1">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Kategorie</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Categories</h3>
             <div className="space-y-2">
               <Button
                 variant={selectedCategory === null ? "default" : "ghost"}
                 className={`w-full justify-start ${selectedCategory === null ? 'symbiote-gradient text-white border-0' : ''}`}
                 onClick={() => setSelectedCategory(null)}
               >
-                Všechny kategorie
+                All Categories
               </Button>
-              {displayCategories.map((cat: any) => (
+              {categories.map((cat: any) => (
                 <Button
                   key={cat.id}
                   variant={selectedCategory === cat.id ? "default" : "ghost"}
@@ -360,13 +479,13 @@ export default function CommunityForum() {
               <Card className="bg-card/30 border-dashed">
                 <CardContent className="p-12 text-center">
                   <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Zatím žádná témata</h3>
+                  <h3 className="text-lg font-medium mb-2">No topics yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    Začněte diskuzi vytvořením nového tématu!
+                    Start a discussion by creating a new topic!
                   </p>
                   {isAuthenticated && (
                     <Button className="symbiote-gradient text-white border-0" onClick={() => setNewTopicOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" /> Vytvořit první téma
+                      <Plus className="h-4 w-4 mr-2" /> Create First Topic
                     </Button>
                   )}
                 </CardContent>
@@ -394,14 +513,17 @@ export default function CommunityForum() {
                             )}
                             {topic.isLocked && (
                               <Badge variant="destructive" className="text-xs">
-                                <Lock className="h-3 w-3 mr-1" /> Zamčeno
+                                <Lock className="h-3 w-3 mr-1" /> Locked
                               </Badge>
                             )}
                             <h3 className="font-semibold truncate">{topic.title}</h3>
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{topic.content}</p>
                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            <span>{topic.authorName || 'Anonym'}</span>
+                            <span className="flex items-center gap-1">
+                              {topic.authorName || 'Anonymous'}
+                              <VerifiedBadge isVerified={(topic as any).authorVerified} />
+                            </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {formatDistanceToNow(new Date(topic.createdAt), { addSuffix: true, locale: cs })}

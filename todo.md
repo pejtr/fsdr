@@ -248,3 +248,24 @@
 - [x] tRPC endpointy pro všechny nové funkce
 - [x] Registrace nových routes v App.tsx
 - [x] Unit testy pro nové endpointy
+
+## Real-time Chat, Seed Data & Verified Profiles
+
+### Seed Data pro Fórum
+- [x] Vytvořit výchozí kategorie fóra (TG/TF, Crossdressing, Femboy, Advice, Off-topic)
+- [x] Vytvořit ukázkové příspěvky a odpovědi
+- [x] Seed script pro automatické naplnění databáze
+
+### WebSocket Real-time Chat
+- [x] WebSocket server setup na Express
+- [x] Real-time notifikace o nových odpovědích ve fóru
+- [x] Live chat widget ve fóru
+- [x] Online uživatelé indikátor
+- [x] Typing indicator
+
+### Verified Profiles
+- [x] Přidat verified sloupec do users tabulky
+- [x] Verified badge komponenta (checkmark icon)
+- [x] Zobrazení verified badge na profilu a ve fóru
+- [x] Admin endpoint pro udělení verified statusu
+- [x] Žádost o ověření profilu (verification request)

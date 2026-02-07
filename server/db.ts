@@ -2537,3 +2537,40 @@ export async function getPublicUserProfile(userId: number) {
     .where(and(eq(userProfiles.userId, userId), eq(userProfiles.isPublic, true)));
   return result[0] || null;
 }
+
+// ==================== Verified Badge System ====================
+
+export async function requestVerification(userId: number, reason: string) {
+  const database = await getDb();
+  if (!database) return;
+  const existing = await database.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
+  if (existing.length > 0) {
+    await database.execute(
+      sql`UPDATE user_profiles SET verificationStatus = 'pending', verificationReason = ${reason}, verificationRequestedAt = ${Date.now()} WHERE userId = ${userId}`
+    );
+  } else {
+    await database.insert(userProfiles).values({ userId } as any);
+    await database.execute(
+      sql`UPDATE user_profiles SET verificationStatus = 'pending', verificationReason = ${reason}, verificationRequestedAt = ${Date.now()} WHERE userId = ${userId}`
+    );
+  }
+}
+
+export async function setUserVerified(userId: number, verified: boolean) {
+  const database = await getDb();
+  if (!database) return;
+  const existing = await database.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
+  if (existing.length > 0) {
+    await database.update(userProfiles)
+      .set({ isVerified: verified })
+      .where(eq(userProfiles.userId, userId));
+    await database.execute(
+      sql`UPDATE user_profiles SET verificationStatus = ${verified ? 'approved' : 'rejected'} WHERE userId = ${userId}`
+    );
+  } else {
+    await database.insert(userProfiles).values({ userId, isVerified: verified });
+    await database.execute(
+      sql`UPDATE user_profiles SET verificationStatus = ${verified ? 'approved' : 'rejected'} WHERE userId = ${userId}`
+    );
+  }
+}

@@ -2294,6 +2294,39 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
         });
         return { id };
       }),
+
+    // Request verification
+    requestVerification: protectedProcedure
+      .input(z.object({
+        reason: z.string().min(10).max(500),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Store verification request - admin can approve via SQL or admin panel
+        await db.requestVerification(ctx.user.id, input.reason);
+        return { success: true, message: 'Verification request submitted' };
+      }),
+
+    // Admin: verify a user
+    verifyUser: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        }
+        await db.setUserVerified(input.userId, true);
+        return { success: true };
+      }),
+
+    // Admin: unverify a user
+    unverifyUser: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        }
+        await db.setUserVerified(input.userId, false);
+        return { success: true };
+      }),
   }),
 });
 
