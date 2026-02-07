@@ -15,7 +15,8 @@ import {
   photoLikes, photoComments, PhotoComment,
   forumCategories, forumTopics, forumReplies, forumVotes,
   transformationShowcase, TransformationShowcase,
-  userProfiles, UserProfile
+  userProfiles, UserProfile,
+  ctaTests, ctaVariants, socialProofEvents
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -2845,4 +2846,71 @@ export async function seedBadgeDefinitions() {
   for (const badge of badges) {
     await db.insert(badgeDefinitions).values(badge);
   }
+}
+
+
+// ============ SOCIAL PROOF ============
+
+export async function getRecentSocialProofEvents(limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(socialProofEvents).orderBy(desc(socialProofEvents.createdAt)).limit(limit);
+}
+
+export async function createSocialProofEvent(data: { eventType: 'signup' | 'subscription' | 'purchase'; displayName: string; location?: string; tierName?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(socialProofEvents).values({
+    eventType: data.eventType,
+    displayName: data.displayName,
+    location: data.location || null,
+    tierName: data.tierName || null,
+  });
+}
+
+// ============ A/B TESTING ============
+
+export async function getActiveCtaTest(location: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const [test] = await db.select().from(ctaTests).where(and(eq(ctaTests.location, location), eq(ctaTests.isActive, true))).limit(1);
+  if (!test) return null;
+  const variants = await db.select().from(ctaVariants).where(eq(ctaVariants.testId, test.id));
+  return { ...test, variants };
+}
+
+export async function recordCtaImpression(variantId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ctaVariants).set({ impressions: sql`${ctaVariants.impressions} + 1` }).where(eq(ctaVariants.id, variantId));
+}
+
+export async function recordCtaClick(variantId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ctaVariants).set({ clicks: sql`${ctaVariants.clicks} + 1` }).where(eq(ctaVariants.id, variantId));
+}
+
+export async function recordCtaConversion(variantId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ctaVariants).set({ conversions: sql`${ctaVariants.conversions} + 1` }).where(eq(ctaVariants.id, variantId));
+}
+
+export async function getCtaTestResults(testId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(ctaVariants).where(eq(ctaVariants.testId, testId));
+}
+
+export async function getAllCtaTests() {
+  const db = await getDb();
+  if (!db) return [];
+  const tests = await db.select().from(ctaTests).orderBy(desc(ctaTests.createdAt));
+  const results = [];
+  for (const test of tests) {
+    const variants = await db.select().from(ctaVariants).where(eq(ctaVariants.testId, test.id));
+    results.push({ ...test, variants });
+  }
+  return results;
 }

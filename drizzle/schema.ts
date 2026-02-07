@@ -1080,3 +1080,41 @@ export const badgeDefinitions = mysqlTable("badgeDefinitions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type BadgeDefinition = typeof badgeDefinitions.$inferSelect;
+
+
+// ============ A/B TESTING FOR CTA BUTTONS ============
+export const ctaTests = mysqlTable("ctaTests", {
+  id: int("id").autoincrement().primaryKey(),
+  testName: varchar("testName", { length: 100 }).notNull(),
+  location: varchar("location", { length: 100 }).notNull(), // e.g., "hero", "pricing", "exit_popup"
+  isActive: boolean("isActive").default(true).notNull(),
+  winnerVariantId: int("winnerVariantId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CtaTest = typeof ctaTests.$inferSelect;
+
+export const ctaVariants = mysqlTable("ctaVariants", {
+  id: int("id").autoincrement().primaryKey(),
+  testId: int("testId").notNull(),
+  variantName: varchar("variantName", { length: 50 }).notNull(), // "A", "B", "C"
+  buttonText: varchar("buttonText", { length: 100 }).notNull(),
+  buttonColor: varchar("buttonColor", { length: 50 }), // tailwind class or hex
+  subText: varchar("subText", { length: 200 }),
+  impressions: int("impressions").default(0).notNull(),
+  clicks: int("clicks").default(0).notNull(),
+  conversions: int("conversions").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CtaVariant = typeof ctaVariants.$inferSelect;
+
+// ============ SOCIAL PROOF EVENTS ============
+export const socialProofEvents = mysqlTable("socialProofEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventType: mysqlEnum("eventType", ["signup", "subscription", "purchase"]).notNull(),
+  displayName: varchar("displayName", { length: 100 }).notNull(),
+  location: varchar("location", { length: 100 }),
+  tierName: varchar("tierName", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SocialProofEvent = typeof socialProofEvents.$inferSelect;

@@ -27,6 +27,7 @@ import UserProfile from "./pages/UserProfile";
 import PhotoGallery from "./pages/PhotoGallery";
 import CommunityForum from "./pages/CommunityForum";
 import Leaderboard from "./pages/Leaderboard";
+import { SocialProofWidget } from "./components/SocialProofWidget";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -83,6 +84,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <SocialProofWidget />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

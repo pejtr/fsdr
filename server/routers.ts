@@ -8,6 +8,12 @@ import * as db from "./db";
 import { storagePut } from "./storage";
 import { notifyNewCommission, notifyNewBadge, notifyNewSubscriber } from "./notifications";
 import { nanoid } from "nanoid";
+import Stripe from "stripe";
+import { PRODUCTS, type ProductKey } from "./products";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2025-01-27.acacia" as any,
+});
 
 // Admin procedure - only for admin users
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -2594,6 +2600,136 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
         sent++;
       }
       return { success: true, notificationsSent: sent };
+    }),
+  }),
+
+  // ============ SOCIAL PROOF ============
+  socialProof: router({
+    getRecent: publicProcedure.query(async () => {
+      return db.getRecentSocialProofEvents(15);
+    }),
+    recordSignup: protectedProcedure.input(z.object({
+      displayName: z.string(),
+      location: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      await db.createSocialProofEvent({
+        eventType: 'signup',
+        displayName: input.displayName,
+        location: input.location,
+      });
+      return { success: true };
+    }),
+  }),
+
+  // ============ A/B TESTING ============
+  ctaTest: router({
+    getVariant: publicProcedure.input(z.object({
+      location: z.string(),
+    })).query(async ({ input }) => {
+      const test = await db.getActiveCtaTest(input.location);
+      if (!test || test.variants.length === 0) return null;
+      // Randomly assign a variant (weighted by inverse impressions for even distribution)
+      const totalImpressions = test.variants.reduce((sum: number, v: any) => sum + v.impressions, 0);
+      let selectedVariant;
+      if (totalImpressions === 0) {
+        selectedVariant = test.variants[Math.floor(Math.random() * test.variants.length)];
+      } else {
+        // Thompson sampling approximation: favor less-seen variants
+        const weights = test.variants.map((v: any) => 1 / (v.impressions + 1));
+        const totalWeight = weights.reduce((a: number, b: number) => a + b, 0);
+        let rand = Math.random() * totalWeight;
+        let idx = 0;
+        for (let i = 0; i < weights.length; i++) {
+          rand -= weights[i];
+          if (rand <= 0) { idx = i; break; }
+        }
+        selectedVariant = test.variants[idx];
+      }
+      // Record impression
+      await db.recordCtaImpression(selectedVariant.id);
+      return {
+        testId: test.id,
+        testName: test.testName,
+        variant: selectedVariant,
+      };
+    }),
+    recordClick: publicProcedure.input(z.object({
+      variantId: z.number(),
+    })).mutation(async ({ input }) => {
+      await db.recordCtaClick(input.variantId);
+      return { success: true };
+    }),
+    recordConversion: publicProcedure.input(z.object({
+      variantId: z.number(),
+    })).mutation(async ({ input }) => {
+      await db.recordCtaConversion(input.variantId);
+      return { success: true };
+    }),
+    // Admin: get all test results
+    getResults: adminProcedure.query(async () => {
+      return db.getAllCtaTests();
+    }),
+  }),
+
+  // ============ STRIPE CHECKOUT ============
+  checkout: router({
+    createSession: protectedProcedure.input(z.object({
+      productKey: z.enum(['community_plus', 'vip_insider']),
+      billingCycle: z.enum(['monthly', 'yearly']).default('monthly'),
+    })).mutation(async ({ ctx, input }) => {
+      const product = PRODUCTS[input.productKey];
+      if (!product) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid product' });
+      }
+
+      const priceInCents = input.billingCycle === 'yearly' ? product.priceYearly : product.priceMonthly;
+      const origin = ctx.req.headers.origin || 'https://femsider.manus.space';
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer_email: ctx.user.email || undefined,
+        client_reference_id: ctx.user.id.toString(),
+        allow_promotion_codes: true,
+        metadata: {
+          user_id: ctx.user.id.toString(),
+          customer_email: ctx.user.email || '',
+          customer_name: ctx.user.name || '',
+          tier: product.tier,
+          product_key: input.productKey,
+          billing_cycle: input.billingCycle,
+        },
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: product.name,
+              description: product.description,
+            },
+            unit_amount: priceInCents,
+            recurring: {
+              interval: input.billingCycle === 'yearly' ? 'year' : 'month',
+            },
+          },
+          quantity: 1,
+        }],
+        success_url: `${origin}/subscriptions?success=true&tier=${product.tier}`,
+        cancel_url: `${origin}/?cancelled=true`,
+      });
+
+      return { url: session.url };
+    }),
+
+    getProducts: publicProcedure.query(() => {
+      return Object.entries(PRODUCTS).map(([key, product]) => ({
+        key,
+        name: product.name,
+        description: product.description,
+        priceMonthly: product.priceMonthly,
+        priceYearly: product.priceYearly,
+        originalPrice: product.originalPrice,
+        tier: product.tier,
+        features: product.features,
+      }));
     }),
   }),
 });

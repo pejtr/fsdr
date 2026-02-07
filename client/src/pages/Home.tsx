@@ -10,6 +10,8 @@ import {
 import { Link } from "wouter";
 import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
+import { useCtaTest } from "@/hooks/useCtaTest";
+import { toast } from "sonner";
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
@@ -19,6 +21,33 @@ export default function Home() {
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const heroRef = useRef<HTMLElement>(null);
   const exitShownRef = useRef(false);
+
+  // A/B Testing hooks
+  const heroCta = useCtaTest('hero');
+  const pricingCta = useCtaTest('pricing');
+
+  // Stripe checkout mutation
+  const checkoutMutation = trpc.checkout.createSession.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.success("Přesměrování na platbu...", { description: "Otevíráme Stripe checkout v novém okně." });
+        window.open(data.url, '_blank');
+        // Track conversion for A/B test
+        pricingCta.trackConversion();
+      }
+    },
+    onError: (err) => {
+      toast.error("Chyba", { description: err.message });
+    },
+  });
+
+  const handleCheckout = (productKey: 'community_plus' | 'vip_insider') => {
+    if (!isAuthenticated) {
+      window.location.href = getLoginUrl();
+      return;
+    }
+    checkoutMutation.mutate({ productKey, billingCycle: 'monthly' });
+  };
 
   // Fetch real content counts
   const { data: topicsData } = trpc.forum.getTopics.useQuery({ limit: 3 });
@@ -165,14 +194,14 @@ export default function Home() {
                   </>
                 ) : (
                   <>
-                    <a href={getLoginUrl()} onClick={() => handleCTAClick("hero_join")}>
-                      <Button size="lg" className="symbiote-gradient text-white border-0 symbiote-glow w-full text-base font-bold animate-pulse hover:animate-none">
+                    <a href={getLoginUrl()} onClick={() => { handleCTAClick("hero_join"); heroCta.trackClick(); }}>
+                      <Button size="lg" className={`${heroCta.variant?.buttonColor || 'symbiote-gradient'} text-white border-0 symbiote-glow w-full text-base font-bold animate-pulse hover:animate-none`}>
                         <Sparkles className="mr-2 h-5 w-5" />
-                        Připojit se ZDARMA
+                        {heroCta.variant?.buttonText || 'Připojit se ZDARMA'}
                       </Button>
                     </a>
                     <p className="text-xs text-center text-muted-foreground">
-                      Žádná kreditní karta. Zrušit kdykoliv.
+                      {heroCta.variant?.subText || 'Žádná kreditní karta. Zrušit kdykoliv.'}
                     </p>
                   </>
                 )}
@@ -348,19 +377,21 @@ export default function Home() {
                 ))}
               </ul>
               {!isAuthenticated ? (
-                <a href={getLoginUrl()} onClick={() => handleCTAClick("tier_community")}>
-                  <Button className="symbiote-gradient text-white border-0 w-full font-bold">
-                    Připojit se nyní
+                <a href={getLoginUrl()} onClick={() => { handleCTAClick("tier_community"); pricingCta.trackClick(); }}>
+                  <Button className={`${pricingCta.variant?.buttonColor || 'symbiote-gradient'} text-white border-0 w-full font-bold`}>
+                    {pricingCta.variant?.buttonText || 'Připojit se nyní'}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </a>
               ) : (
-                <Link href="/subscriptions">
-                  <Button className="symbiote-gradient text-white border-0 w-full font-bold">
-                    Upgradovat
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button 
+                  className="symbiote-gradient text-white border-0 w-full font-bold"
+                  onClick={() => handleCheckout('community_plus')}
+                  disabled={checkoutMutation.isPending}
+                >
+                  {checkoutMutation.isPending ? 'Načítání...' : 'Předplatit Komunita+'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               )}
               <p className="text-center text-xs text-muted-foreground mt-3">
                 Hodnota: $49/měsíc | <span className="text-[oklch(0.6_0.15_180)]">Platíš jen $4.99</span>
@@ -405,11 +436,14 @@ export default function Home() {
                   </Button>
                 </a>
               ) : (
-                <Link href="/subscriptions">
-                  <Button variant="outline" className="w-full border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 font-bold">
-                    Upgradovat na VIP
+                <Button 
+                  variant="outline" 
+                  className="w-full border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 font-bold"
+                  onClick={() => handleCheckout('vip_insider')}
+                  disabled={checkoutMutation.isPending}
+                >
+                  {checkoutMutation.isPending ? 'Načítání...' : 'Předplatit VIP'}
                   </Button>
-                </Link>
               )}
               <p className="text-center text-xs text-muted-foreground mt-3">
                 Hodnota: $99/měsíc | <span className="text-yellow-400">Platíš jen $9.99</span>

@@ -319,3 +319,24 @@
 - [x] Vylepšení pricing cards s urgency a social proof
 - [x] Content teaser gallery s blur efektem
 - [x] Lepší hero section s video preview
+
+## Social Proof, A/B Testing & Stripe Checkout
+
+### Social Proof Notification Widget
+- [x] Backend endpoint pro nedávné registrace/nákupy
+- [x] Frontend toast widget "Petr z Prahy se právě připojil"
+- [x] Rotace notifikací s animací slide-in/slide-out
+- [x] Zobrazení pouze nepřihlášeným uživatelům
+
+### A/B Testing CTA Buttons
+- [x] A/B test schema v DB (variant, impressions, clicks, conversions)
+- [x] Backend endpointy pro tracking a reporting
+- [x] Frontend hook pro přiřazení varianty a tracking kliků
+- [x] Různé varianty CTA na homepage (text, barva, urgency)
+
+### Stripe Checkout Integration
+- [x] Products/prices definice v products.ts
+- [x] Checkout session endpoint pro každý tier
+- [x] Webhook handler pro payment events
+- [x] Propojení pricing cards s Stripe checkout
+- [x] Success/cancel redirect stránky
