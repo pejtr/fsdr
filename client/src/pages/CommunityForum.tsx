@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MessageSquare, Eye, Pin, Lock, Plus, ArrowLeft, ThumbsUp, ThumbsDown, 
-  Send, Clock, Users, TrendingUp, ChevronRight, Wifi, WifiOff, CheckCircle2
+  Send, Clock, Users, TrendingUp, ChevronRight, Wifi, WifiOff, CheckCircle2,
+  Star, Medal, Award, Flame, Crown
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
@@ -125,6 +126,27 @@ export default function CommunityForum() {
     );
   };
 
+  // Rank badge component
+  const RANK_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+    newcomer: { label: "Newcomer", color: "text-gray-400", icon: Star },
+    member: { label: "Member", color: "text-blue-400", icon: Medal },
+    contributor: { label: "Contributor", color: "text-purple-400", icon: Award },
+    expert: { label: "Expert", color: "text-orange-400", icon: Flame },
+    legend: { label: "Legend", color: "text-yellow-400", icon: Crown },
+  };
+
+  const RankBadge = ({ rank, points }: { rank?: string | null; points?: number | null }) => {
+    if (!rank) return null;
+    const config = RANK_CONFIG[rank] || RANK_CONFIG.newcomer;
+    const Icon = config.icon;
+    return (
+      <span className={`inline-flex items-center gap-0.5 text-xs ${config.color}`} title={`${config.label} (${points || 0} pts)`}>
+        <Icon className="h-3 w-3" />
+        <span className="hidden sm:inline">{config.label}</span>
+      </span>
+    );
+  };
+
   // Topic Detail View with real-time chat
   if (selectedTopic && topicDetail) {
     return (
@@ -176,6 +198,7 @@ export default function CommunityForum() {
                     <span className="flex items-center gap-1">
                       {topicDetail.authorName || 'Anonym'}
                       <VerifiedBadge isVerified={(topicDetail as any).authorVerified} />
+                      <RankBadge rank={(topicDetail as any).authorRank} points={(topicDetail as any).authorPoints} />
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -253,6 +276,7 @@ export default function CommunityForum() {
                           <span className="text-sm font-medium flex items-center gap-1">
                             {reply.authorName || 'Anonym'}
                             <VerifiedBadge isVerified={(reply as any).authorVerified} />
+                            <RankBadge rank={(reply as any).authorRank} points={(reply as any).authorPoints} />
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: cs })}
@@ -523,6 +547,7 @@ export default function CommunityForum() {
                             <span className="flex items-center gap-1">
                               {topic.authorName || 'Anonymous'}
                               <VerifiedBadge isVerified={(topic as any).authorVerified} />
+                              <RankBadge rank={(topic as any).authorRank} points={(topic as any).authorPoints} />
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />

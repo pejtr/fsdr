@@ -155,7 +155,7 @@ export default function AffiliateDashboard() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <StatCard
             title="Celkové výdělky"
             value={`$${stats?.totalEarnings || '0'}`}
@@ -179,6 +179,13 @@ export default function AffiliateDashboard() {
             value={myPosition ? `#${myPosition.rank}` : '-'}
             icon={<Trophy className="h-5 w-5" />}
             gradient="from-yellow-500 to-orange-600"
+          />
+          <StatCard
+            title="Reputace"
+            value={`${stats?.reputation?.points || 0} pts`}
+            icon={<Star className="h-5 w-5" />}
+            gradient="from-pink-500 to-rose-600"
+            subtitle={stats?.reputation?.rank ? stats.reputation.rank.charAt(0).toUpperCase() + stats.reputation.rank.slice(1) : 'Newcomer'}
           />
         </div>
 
@@ -981,11 +988,12 @@ function PromoText({ title, text }: { title: string; text: string }) {
   );
 }
 
-function StatCard({ title, value, icon, gradient }: { 
+function StatCard({ title, value, icon, gradient, subtitle }: { 
   title: string; 
   value: string; 
   icon: React.ReactNode;
   gradient: string;
+  subtitle?: string;
 }) {
   return (
     <Card className="symbiote-card overflow-hidden">
@@ -996,6 +1004,7 @@ function StatCard({ title, value, icon, gradient }: {
           <span className={`bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>{icon}</span>
         </div>
         <span className="text-2xl font-bold">{value}</span>
+        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
       </CardContent>
     </Card>
   );

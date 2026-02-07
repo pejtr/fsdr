@@ -2319,41 +2319,33 @@ export async function getForumTopics(options: { categoryId?: number; limit?: num
   const conditions = [];
   if (options.categoryId) conditions.push(eq(forumTopics.categoryId, options.categoryId));
   if (options.pinned !== undefined) conditions.push(eq(forumTopics.isPinned, options.pinned));
+
+  const selectFields = {
+    id: forumTopics.id,
+    categoryId: forumTopics.categoryId,
+    authorId: forumTopics.authorId,
+    title: forumTopics.title,
+    content: forumTopics.content,
+    isPinned: forumTopics.isPinned,
+    isLocked: forumTopics.isLocked,
+    viewCount: forumTopics.viewCount,
+    replyCount: forumTopics.replyCount,
+    lastReplyAt: forumTopics.lastReplyAt,
+    createdAt: forumTopics.createdAt,
+    authorName: users.name,
+    authorAvatar: users.avatarUrl,
+    authorRank: userReputation.rank,
+    authorPoints: userReputation.points,
+  };
   
   const query = conditions.length > 0
-    ? db.select({
-        id: forumTopics.id,
-        categoryId: forumTopics.categoryId,
-        authorId: forumTopics.authorId,
-        title: forumTopics.title,
-        content: forumTopics.content,
-        isPinned: forumTopics.isPinned,
-        isLocked: forumTopics.isLocked,
-        viewCount: forumTopics.viewCount,
-        replyCount: forumTopics.replyCount,
-        lastReplyAt: forumTopics.lastReplyAt,
-        createdAt: forumTopics.createdAt,
-        authorName: users.name,
-        authorAvatar: users.avatarUrl,
-      }).from(forumTopics)
+    ? db.select(selectFields).from(forumTopics)
         .leftJoin(users, eq(forumTopics.authorId, users.id))
+        .leftJoin(userReputation, eq(forumTopics.authorId, userReputation.userId))
         .where(and(...conditions))
-    : db.select({
-        id: forumTopics.id,
-        categoryId: forumTopics.categoryId,
-        authorId: forumTopics.authorId,
-        title: forumTopics.title,
-        content: forumTopics.content,
-        isPinned: forumTopics.isPinned,
-        isLocked: forumTopics.isLocked,
-        viewCount: forumTopics.viewCount,
-        replyCount: forumTopics.replyCount,
-        lastReplyAt: forumTopics.lastReplyAt,
-        createdAt: forumTopics.createdAt,
-        authorName: users.name,
-        authorAvatar: users.avatarUrl,
-      }).from(forumTopics)
-        .leftJoin(users, eq(forumTopics.authorId, users.id));
+    : db.select(selectFields).from(forumTopics)
+        .leftJoin(users, eq(forumTopics.authorId, users.id))
+        .leftJoin(userReputation, eq(forumTopics.authorId, userReputation.userId));
   
   return query.orderBy(desc(forumTopics.isPinned), desc(forumTopics.lastReplyAt)).limit(options.limit || 20).offset(options.offset || 0);
 }
@@ -2377,8 +2369,11 @@ export async function getForumTopicById(id: number) {
     createdAt: forumTopics.createdAt,
     authorName: users.name,
     authorAvatar: users.avatarUrl,
+    authorRank: userReputation.rank,
+    authorPoints: userReputation.points,
   }).from(forumTopics)
     .leftJoin(users, eq(forumTopics.authorId, users.id))
+    .leftJoin(userReputation, eq(forumTopics.authorId, userReputation.userId))
     .where(eq(forumTopics.id, id));
   return result[0] || null;
 }
@@ -2402,8 +2397,11 @@ export async function getForumReplies(topicId: number) {
     createdAt: forumReplies.createdAt,
     authorName: users.name,
     authorAvatar: users.avatarUrl,
+    authorRank: userReputation.rank,
+    authorPoints: userReputation.points,
   }).from(forumReplies)
     .leftJoin(users, eq(forumReplies.authorId, users.id))
+    .leftJoin(userReputation, eq(forumReplies.authorId, userReputation.userId))
     .where(eq(forumReplies.topicId, topicId))
     .orderBy(forumReplies.createdAt);
 }

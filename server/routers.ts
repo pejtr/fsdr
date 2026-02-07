@@ -316,6 +316,8 @@ export const appRouter = router({
       const earningsByTier = await db.getAffiliateEarningsByTier(ctx.user.id);
       const networkStats = await db.getReferralNetworkStats(ctx.user.id);
       const user = await db.getUserById(ctx.user.id);
+      // Include gamification data
+      const reputation = await db.getUserReputation(ctx.user.id);
       return {
         affiliateCode: user?.affiliateCode,
         totalEarnings: total,
@@ -324,6 +326,14 @@ export const appRouter = router({
         earningsByTier,
         networkStats,
         tiers: db.AFFILIATE_TIERS,
+        // Gamification integration
+        reputation: {
+          points: reputation?.points || 0,
+          rank: reputation?.rank || 'newcomer',
+          postsCount: reputation?.postsCount || 0,
+          repliesCount: reputation?.repliesCount || 0,
+          upvotesReceived: reputation?.upvotesReceived || 0,
+        },
       };
     }),
     
@@ -352,6 +362,10 @@ export const appRouter = router({
         const currentUser = await db.getUserById(ctx.user.id);
         if (!currentUser?.referredBy) {
           await db.updateUserProfile(ctx.user.id, { referredBy: affiliate.id });
+          // Award reputation points to the affiliate for successful referral
+          await db.addReputationPoints(affiliate.id, 'referral', 10);
+          // Also award to the new user for joining via referral
+          await db.addReputationPoints(ctx.user.id, 'referred_join', 5);
         }
         
         return { success: true };
@@ -2538,6 +2552,48 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
     seedBadges: adminProcedure.mutation(async () => {
       await db.seedBadgeDefinitions();
       return { success: true, message: 'Badge definitions seeded' };
+    }),
+
+    // Weekly digest - generates a summary notification for the user
+    getWeeklyDigest: protectedProcedure.query(async ({ ctx }) => {
+      const rep = await db.getUserReputation(ctx.user.id);
+      const badges = await db.getUserBadgesWithDetails(ctx.user.id);
+      const leaderboard = await db.getReputationLeaderboard(100);
+      const position = leaderboard.findIndex((e: any) => e.userId === ctx.user.id) + 1;
+      const earnedBadges = badges.filter((b: any) => b.earned);
+      return {
+        points: rep?.points || 0,
+        rank: rep?.rank || 'newcomer',
+        postsCount: rep?.postsCount || 0,
+        repliesCount: rep?.repliesCount || 0,
+        upvotesReceived: rep?.upvotesReceived || 0,
+        leaderboardPosition: position || null,
+        totalParticipants: leaderboard.length,
+        badgesEarned: earnedBadges.length,
+        totalBadges: badges.length,
+        recentBadges: earnedBadges.slice(-3).map((b: any) => ({ name: b.name, icon: b.icon })),
+      };
+    }),
+
+    // Send weekly digest notification to all active users (admin only)
+    sendWeeklyDigest: adminProcedure.mutation(async () => {
+      const leaderboard = await db.getReputationLeaderboard(200);
+      let sent = 0;
+      for (const entry of leaderboard) {
+        const user = await db.getUserById(entry.userId);
+        if (!user) continue;
+        const badges = await db.getUserBadgesWithDetails(entry.userId);
+        const earnedCount = badges.filter((b: any) => b.earned).length;
+        const position = leaderboard.findIndex((e: any) => e.userId === entry.userId) + 1;
+        await db.createNotification({
+          userId: entry.userId,
+          type: 'system',
+          title: 'Weekly Community Digest',
+          content: `You have ${entry.points} points (rank: ${entry.rank}, #${position} on leaderboard). Badges: ${earnedCount}/${badges.length}. Keep contributing!`,
+        });
+        sent++;
+      }
+      return { success: true, notificationsSent: sent };
     }),
   }),
 });

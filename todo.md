@@ -296,3 +296,26 @@
 - [x] Content report systém (submit, review, resolve, dismiss)
 - [x] User management v admin panelu (role change, ban)
 - [x] 100 unit testů prošlo
+
+## Rank/Badges in Forum, Weekly Digest & Affiliate Gamification
+
+### Rank & Badges in Forum
+- [x] Zobrazení ranku a odznaků vedle jména uživatele u každého příspěvku ve fóru
+- [x] Zobrazení ranku a odznaků vedle jména uživatele u každé odpovědi ve fóru
+
+### Weekly Digest Notification
+- [x] Backend endpoint pro generování weekly digest notifikace
+- [x] Souhrn nových bodů, odznaků a pozice na leaderboardu
+
+### Affiliate Gamification Integration
+- [x] Bonus body za doporučení nových uživatelů (referral)
+- [x] Zobrazení reputačních bodů v affiliate dashboardu
+- [x] Propojení affiliate výkonnosti s gamifikačním systémem
+
+## Homepage Redesign - Conversion Optimization
+
+- [x] Locked content preview (blurred thumbnails with lock icon)
+- [x] Stronger CTA flow pro sledující a platící uživatele
+- [x] Vylepšení pricing cards s urgency a social proof
+- [x] Content teaser gallery s blur efektem
+- [x] Lepší hero section s video preview
