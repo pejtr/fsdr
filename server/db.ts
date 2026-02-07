@@ -10,7 +10,12 @@ import {
   videoLikes, InsertVideoLike,
   moderationFlags, InsertModerationFlag,
   comments, InsertComment,
-  videoReactions, InsertVideoReaction
+  videoReactions, InsertVideoReaction,
+  photos, InsertPhoto, Photo,
+  photoLikes, photoComments, PhotoComment,
+  forumCategories, forumTopics, forumReplies, forumVotes,
+  transformationShowcase, TransformationShowcase,
+  userProfiles, UserProfile
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -2191,4 +2196,344 @@ export async function deleteVideoReaction(reactionId: number, userId: number) {
         eq(videoReactions.userId, userId)
       )
     );
+}
+
+
+// ============ PHOTO GALLERY ============
+
+export async function createPhoto(photo: Omit<InsertPhoto, 'id'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(photos).values(photo);
+  return result[0].insertId;
+}
+
+export async function getPhotos(options: { 
+  category?: string; 
+  userId?: number; 
+  limit?: number; 
+  offset?: number;
+  isPublic?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (options.isPublic !== false) conditions.push(eq(photos.isPublic, true));
+  if (options.category) conditions.push(eq(photos.category, options.category as any));
+  if (options.userId) conditions.push(eq(photos.userId, options.userId));
+  
+  const query = conditions.length > 0 
+    ? db.select().from(photos).where(and(...conditions))
+    : db.select().from(photos);
+  
+  return query.orderBy(desc(photos.createdAt)).limit(options.limit || 20).offset(options.offset || 0);
+}
+
+export async function getPhotoById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(photos).where(eq(photos.id, id));
+  return result[0] || null;
+}
+
+export async function deletePhoto(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(photos).where(and(eq(photos.id, id), eq(photos.userId, userId)));
+  return true;
+}
+
+export async function togglePhotoLike(photoId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const existing = await db.select().from(photoLikes)
+    .where(and(eq(photoLikes.photoId, photoId), eq(photoLikes.userId, userId)));
+  
+  if (existing.length > 0) {
+    await db.delete(photoLikes).where(eq(photoLikes.id, existing[0].id));
+    await db.update(photos).set({ likeCount: sql`${photos.likeCount} - 1` }).where(eq(photos.id, photoId));
+    return false; // unliked
+  } else {
+    await db.insert(photoLikes).values({ photoId, userId });
+    await db.update(photos).set({ likeCount: sql`${photos.likeCount} + 1` }).where(eq(photos.id, photoId));
+    return true; // liked
+  }
+}
+
+export async function isPhotoLiked(photoId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select().from(photoLikes)
+    .where(and(eq(photoLikes.photoId, photoId), eq(photoLikes.userId, userId)));
+  return result.length > 0;
+}
+
+export async function getPhotoComments(photoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: photoComments.id,
+    photoId: photoComments.photoId,
+    userId: photoComments.userId,
+    content: photoComments.content,
+    parentId: photoComments.parentId,
+    likeCount: photoComments.likeCount,
+    createdAt: photoComments.createdAt,
+    userName: users.name,
+    userAvatar: users.avatarUrl,
+  }).from(photoComments)
+    .leftJoin(users, eq(photoComments.userId, users.id))
+    .where(eq(photoComments.photoId, photoId))
+    .orderBy(desc(photoComments.createdAt));
+}
+
+export async function createPhotoComment(data: { photoId: number; userId: number; content: string; parentId?: number }) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(photoComments).values(data);
+  await db.update(photos).set({ commentCount: sql`${photos.commentCount} + 1` }).where(eq(photos.id, data.photoId));
+  return result[0].insertId;
+}
+
+export async function getPhotoCount(options?: { category?: string; userId?: number }) {
+  const db = await getDb();
+  if (!db) return 0;
+  const conditions = [eq(photos.isPublic, true)];
+  if (options?.category) conditions.push(eq(photos.category, options.category as any));
+  if (options?.userId) conditions.push(eq(photos.userId, options.userId));
+  const result = await db.select({ count: sql<number>`count(*)` }).from(photos).where(and(...conditions));
+  return result[0]?.count || 0;
+}
+
+// ============ FORUM ============
+
+export async function getForumCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(forumCategories).where(eq(forumCategories.isActive, true)).orderBy(forumCategories.sortOrder);
+}
+
+export async function getForumTopics(options: { categoryId?: number; limit?: number; offset?: number; pinned?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (options.categoryId) conditions.push(eq(forumTopics.categoryId, options.categoryId));
+  if (options.pinned !== undefined) conditions.push(eq(forumTopics.isPinned, options.pinned));
+  
+  const query = conditions.length > 0
+    ? db.select({
+        id: forumTopics.id,
+        categoryId: forumTopics.categoryId,
+        authorId: forumTopics.authorId,
+        title: forumTopics.title,
+        content: forumTopics.content,
+        isPinned: forumTopics.isPinned,
+        isLocked: forumTopics.isLocked,
+        viewCount: forumTopics.viewCount,
+        replyCount: forumTopics.replyCount,
+        lastReplyAt: forumTopics.lastReplyAt,
+        createdAt: forumTopics.createdAt,
+        authorName: users.name,
+        authorAvatar: users.avatarUrl,
+      }).from(forumTopics)
+        .leftJoin(users, eq(forumTopics.authorId, users.id))
+        .where(and(...conditions))
+    : db.select({
+        id: forumTopics.id,
+        categoryId: forumTopics.categoryId,
+        authorId: forumTopics.authorId,
+        title: forumTopics.title,
+        content: forumTopics.content,
+        isPinned: forumTopics.isPinned,
+        isLocked: forumTopics.isLocked,
+        viewCount: forumTopics.viewCount,
+        replyCount: forumTopics.replyCount,
+        lastReplyAt: forumTopics.lastReplyAt,
+        createdAt: forumTopics.createdAt,
+        authorName: users.name,
+        authorAvatar: users.avatarUrl,
+      }).from(forumTopics)
+        .leftJoin(users, eq(forumTopics.authorId, users.id));
+  
+  return query.orderBy(desc(forumTopics.isPinned), desc(forumTopics.lastReplyAt)).limit(options.limit || 20).offset(options.offset || 0);
+}
+
+export async function getForumTopicById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  // Increment view count
+  await db.update(forumTopics).set({ viewCount: sql`${forumTopics.viewCount} + 1` }).where(eq(forumTopics.id, id));
+  const result = await db.select({
+    id: forumTopics.id,
+    categoryId: forumTopics.categoryId,
+    authorId: forumTopics.authorId,
+    title: forumTopics.title,
+    content: forumTopics.content,
+    isPinned: forumTopics.isPinned,
+    isLocked: forumTopics.isLocked,
+    viewCount: forumTopics.viewCount,
+    replyCount: forumTopics.replyCount,
+    lastReplyAt: forumTopics.lastReplyAt,
+    createdAt: forumTopics.createdAt,
+    authorName: users.name,
+    authorAvatar: users.avatarUrl,
+  }).from(forumTopics)
+    .leftJoin(users, eq(forumTopics.authorId, users.id))
+    .where(eq(forumTopics.id, id));
+  return result[0] || null;
+}
+
+export async function createForumTopic(data: { categoryId: number; authorId: number; title: string; content: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(forumTopics).values({ ...data, lastReplyAt: new Date() });
+  return result[0].insertId;
+}
+
+export async function getForumReplies(topicId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: forumReplies.id,
+    topicId: forumReplies.topicId,
+    authorId: forumReplies.authorId,
+    content: forumReplies.content,
+    likeCount: forumReplies.likeCount,
+    createdAt: forumReplies.createdAt,
+    authorName: users.name,
+    authorAvatar: users.avatarUrl,
+  }).from(forumReplies)
+    .leftJoin(users, eq(forumReplies.authorId, users.id))
+    .where(eq(forumReplies.topicId, topicId))
+    .orderBy(forumReplies.createdAt);
+}
+
+export async function createForumReply(data: { topicId: number; authorId: number; content: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(forumReplies).values(data);
+  await db.update(forumTopics).set({ 
+    replyCount: sql`${forumTopics.replyCount} + 1`,
+    lastReplyAt: new Date(),
+    lastReplyBy: data.authorId,
+  }).where(eq(forumTopics.id, data.topicId));
+  return result[0].insertId;
+}
+
+export async function toggleForumVote(userId: number, topicId: number | null, replyId: number | null, voteType: 'upvote' | 'downvote') {
+  const db = await getDb();
+  if (!db) return null;
+  const conditions = [eq(forumVotes.userId, userId)];
+  if (topicId) conditions.push(eq(forumVotes.topicId, topicId));
+  if (replyId) conditions.push(eq(forumVotes.replyId, replyId));
+  
+  const existing = await db.select().from(forumVotes).where(and(...conditions));
+  
+  if (existing.length > 0) {
+    if (existing[0].voteType === voteType) {
+      await db.delete(forumVotes).where(eq(forumVotes.id, existing[0].id));
+      return null; // removed vote
+    } else {
+      await db.update(forumVotes).set({ voteType }).where(eq(forumVotes.id, existing[0].id));
+      return voteType;
+    }
+  } else {
+    await db.insert(forumVotes).values({ userId, topicId, replyId, voteType });
+    return voteType;
+  }
+}
+
+export async function getForumTopicCount(categoryId?: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const conditions = categoryId ? [eq(forumTopics.categoryId, categoryId)] : [];
+  const result = conditions.length > 0
+    ? await db.select({ count: sql<number>`count(*)` }).from(forumTopics).where(and(...conditions))
+    : await db.select({ count: sql<number>`count(*)` }).from(forumTopics);
+  return result[0]?.count || 0;
+}
+
+// ============ TRANSFORMATION SHOWCASE ============
+
+export async function createTransformation(data: Omit<TransformationShowcase, 'id' | 'likeCount' | 'commentCount' | 'isPublic' | 'isFeatured' | 'createdAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(transformationShowcase).values(data);
+  return result[0].insertId;
+}
+
+export async function getTransformations(options: { userId?: number; category?: string; limit?: number; offset?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(transformationShowcase.isPublic, true)];
+  if (options.userId) conditions.push(eq(transformationShowcase.userId, options.userId));
+  if (options.category) conditions.push(eq(transformationShowcase.category, options.category as any));
+  
+  return db.select({
+    id: transformationShowcase.id,
+    userId: transformationShowcase.userId,
+    title: transformationShowcase.title,
+    description: transformationShowcase.description,
+    beforeImageUrl: transformationShowcase.beforeImageUrl,
+    afterImageUrl: transformationShowcase.afterImageUrl,
+    category: transformationShowcase.category,
+    likeCount: transformationShowcase.likeCount,
+    commentCount: transformationShowcase.commentCount,
+    isFeatured: transformationShowcase.isFeatured,
+    createdAt: transformationShowcase.createdAt,
+    userName: users.name,
+    userAvatar: users.avatarUrl,
+  }).from(transformationShowcase)
+    .leftJoin(users, eq(transformationShowcase.userId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(transformationShowcase.createdAt))
+    .limit(options.limit || 20)
+    .offset(options.offset || 0);
+}
+
+// ============ USER PROFILES ============
+
+export async function getUserProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
+  return result[0] || null;
+}
+
+export async function upsertUserProfile(userId: number, data: Partial<UserProfile>) {
+  const db = await getDb();
+  if (!db) return null;
+  const existing = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
+  if (existing.length > 0) {
+    await db.update(userProfiles).set({ ...data, updatedAt: new Date() }).where(eq(userProfiles.userId, userId));
+    return existing[0].id;
+  } else {
+    const result = await db.insert(userProfiles).values({ userId, ...data } as any);
+    return result[0].insertId;
+  }
+}
+
+export async function getPublicUserProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select({
+    id: userProfiles.id,
+    userId: userProfiles.userId,
+    displayName: userProfiles.displayName,
+    pronouns: userProfiles.pronouns,
+    identityType: userProfiles.identityType,
+    interests: userProfiles.interests,
+    experienceLevel: userProfiles.experienceLevel,
+    galleryImages: userProfiles.galleryImages,
+    socialLinks: userProfiles.socialLinks,
+    isVerified: userProfiles.isVerified,
+    lastActive: userProfiles.lastActive,
+    createdAt: userProfiles.createdAt,
+    userName: users.name,
+    userAvatar: users.avatarUrl,
+    userBio: users.bio,
+  }).from(userProfiles)
+    .leftJoin(users, eq(userProfiles.userId, users.id))
+    .where(and(eq(userProfiles.userId, userId), eq(userProfiles.isPublic, true)));
+  return result[0] || null;
 }

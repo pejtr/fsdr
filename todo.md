@@ -216,3 +216,35 @@
 - [x] Aktualizovat navigaci pro nové sekce
 - [x] Redesign homepage pro rozšířený koncept
 - [x] Přidat category filtering
+
+## User Profile, Photo Gallery & Community Forum
+
+### User Profile Showcase
+- [x] Profilová stránka s transformation showcase (before/after)
+- [x] Editovatelné bio, zájmy a sociální odkazy
+- [x] Galerie vlastních transformací s popisky
+- [x] Achievement/badge display na profilu
+- [x] Follow/unfollow systém na profilu
+
+### Dynamic Photo Gallery
+- [x] Upload fotek s drag & drop
+- [x] Kategorizace fotek (transformation, fashion, makeup, lifestyle)
+- [x] Like/heart systém na fotky
+- [x] Komentáře pod fotkami
+- [x] Lightbox pro prohlížení fotek
+- [x] Filtrování a řazení galerie
+
+### Community Forum / Discussion Board
+- [x] Kategorie diskuzí (TG/TF, Crossdressing, Femboy, Advice, Off-topic)
+- [x] Vytváření nových témat/threadů
+- [x] Odpovědi na témata s citacemi
+- [x] Upvote/downvote systém
+- [x] Pinned/sticky témata
+- [x] Moderační nástroje (lock, delete, move)
+
+### Backend & Routing
+- [x] DB schéma pro forum threads a replies
+- [x] DB schéma pro photo gallery
+- [x] tRPC endpointy pro všechny nové funkce
+- [x] Registrace nových routes v App.tsx
+- [x] Unit testy pro nové endpointy

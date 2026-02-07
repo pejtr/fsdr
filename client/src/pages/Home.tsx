@@ -35,7 +35,7 @@ export default function Home() {
           {/* Left symbiote character */}
           <div className="absolute left-0 top-0 bottom-0 w-1/3 opacity-40">
             <img 
-              src="/symbiote-left.png" 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/89740521/RdLPeADGOAGhrVda.png" 
               alt="" 
               className="h-full object-cover object-right"
             />
@@ -44,7 +44,7 @@ export default function Home() {
           {/* Right symbiote character */}
           <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-40">
             <img 
-              src="/symbiote-right.png" 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/89740521/ypLFGemAnHfcHTHG.png" 
               alt="" 
               className="h-full object-cover object-left"
             />
@@ -68,7 +68,7 @@ export default function Home() {
               <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[oklch(0.6_0.15_180)] shadow-[0_0_30px_oklch(0.6_0.15_180/0.5)]">
                   <img 
-                    src="/skrull-profile.png" 
+                    src="https://files.manuscdn.com/user_upload_by_module/session_file/89740521/CrlsnPOMLOibjsgs.png" 
                     alt="FEMSIDER Creator" 
                     className="w-full h-full object-cover"
                   />

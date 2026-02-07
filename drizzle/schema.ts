@@ -956,3 +956,80 @@ export const forumReplies = mysqlTable("forum_replies", {
 export type ForumCategory = typeof forumCategories.$inferSelect;
 export type ForumTopic = typeof forumTopics.$inferSelect;
 export type ForumReply = typeof forumReplies.$inferSelect;
+
+
+// Photo Gallery
+export const photos = mysqlTable("photos", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }),
+  description: text("description"),
+  imageUrl: text("imageUrl").notNull(),
+  thumbnailUrl: text("thumbnailUrl"),
+  category: mysqlEnum("category", [
+    "transformation", "fashion", "makeup", "lifestyle", "before_after", "cosplay", "other"
+  ]).default("other"),
+  tags: json("tags"),
+  likeCount: int("likeCount").default(0),
+  commentCount: int("commentCount").default(0),
+  viewCount: int("viewCount").default(0),
+  isPublic: boolean("isPublic").default(true),
+  isPremium: boolean("isPremium").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Photo = typeof photos.$inferSelect;
+export type InsertPhoto = typeof photos.$inferInsert;
+
+// Photo Likes
+export const photoLikes = mysqlTable("photo_likes", {
+  id: int("id").autoincrement().primaryKey(),
+  photoId: int("photoId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// Photo Comments
+export const photoComments = mysqlTable("photo_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  photoId: int("photoId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  parentId: int("parentId"),
+  likeCount: int("likeCount").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PhotoComment = typeof photoComments.$inferSelect;
+
+// Forum Topic Votes (upvote/downvote)
+export const forumVotes = mysqlTable("forum_votes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  topicId: int("topicId"),
+  replyId: int("replyId"),
+  voteType: mysqlEnum("voteType", ["upvote", "downvote"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// Transformation Showcase (before/after pairs)
+export const transformationShowcase = mysqlTable("transformation_showcase", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  beforeImageUrl: text("beforeImageUrl").notNull(),
+  afterImageUrl: text("afterImageUrl").notNull(),
+  category: mysqlEnum("category", [
+    "mtf", "ftm", "crossdress", "makeup", "fashion", "cosplay", "other"
+  ]).default("other"),
+  likeCount: int("likeCount").default(0),
+  commentCount: int("commentCount").default(0),
+  isPublic: boolean("isPublic").default(true),
+  isFeatured: boolean("isFeatured").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TransformationShowcase = typeof transformationShowcase.$inferSelect;

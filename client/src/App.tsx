@@ -23,6 +23,10 @@ import VideoRecreateStudio from "./pages/VideoRecreateStudio";
 import Gallery from "./pages/Gallery";
 import CrossdresserCommunity from "./pages/CrossdresserCommunity";
 import FemboyHub from "./pages/FemboyHub";
+import UserProfile from "./pages/UserProfile";
+import PhotoGallery from "./pages/PhotoGallery";
+import CommunityForum from "./pages/CommunityForum";
+
 import { useAuth } from "@/_core/hooks/useAuth";
 
 function Router() {
@@ -34,6 +38,9 @@ function Router() {
       <Route path="/browse" component={Browse} />
       <Route path="/crossdresser" component={CrossdresserCommunity} />
       <Route path="/femboy" component={FemboyHub} />
+      <Route path="/photos" component={PhotoGallery} />
+      <Route path="/forum" component={CommunityForum} />
+      <Route path="/profile/:id" component={UserProfile} />
       <Route path="/video/:id" component={VideoPage} />
       <Route path="/creator/:id" component={CreatorProfile} />
       <Route path="/verify-age" component={AgeVerification} />
@@ -52,6 +59,7 @@ function Router() {
           <Route path="/ai-assistant" component={AIAssistant} />
           <Route path="/video-recreate" component={VideoRecreateStudio} />
           <Route path="/gallery" component={Gallery} />
+          <Route path="/profile" component={UserProfile} />
         </>
       )}
       

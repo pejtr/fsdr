@@ -2054,6 +2054,247 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
         return db.getProjectJobs(input.projectId);
       }),
   }),
+
+  // ============ PHOTO GALLERY ROUTER ============
+  photoGallery: router({
+    getPhotos: publicProcedure
+      .input(z.object({
+        category: z.string().optional(),
+        userId: z.number().optional(),
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ input }) => {
+        const [items, total] = await Promise.all([
+          db.getPhotos(input),
+          db.getPhotoCount({ category: input.category, userId: input.userId }),
+        ]);
+        return { items, total };
+      }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return db.getPhotoById(input.id);
+      }),
+
+    upload: protectedProcedure
+      .input(z.object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        imageUrl: z.string(),
+        thumbnailUrl: z.string().optional(),
+        category: z.enum(['transformation', 'fashion', 'makeup', 'lifestyle', 'before_after', 'cosplay', 'other']).default('other'),
+        tags: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const photoId = await db.createPhoto({
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { photoId };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deletePhoto(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    toggleLike: protectedProcedure
+      .input(z.object({ photoId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const liked = await db.togglePhotoLike(input.photoId, ctx.user.id);
+        return { liked };
+      }),
+
+    isLiked: protectedProcedure
+      .input(z.object({ photoId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return db.isPhotoLiked(input.photoId, ctx.user.id);
+      }),
+
+    getComments: publicProcedure
+      .input(z.object({ photoId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getPhotoComments(input.photoId);
+      }),
+
+    addComment: protectedProcedure
+      .input(z.object({
+        photoId: z.number(),
+        content: z.string().min(1).max(1000),
+        parentId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const commentId = await db.createPhotoComment({
+          photoId: input.photoId,
+          userId: ctx.user.id,
+          content: input.content,
+          parentId: input.parentId,
+        });
+        return { commentId };
+      }),
+
+    uploadFile: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        fileData: z.string(), // base64
+        contentType: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const buffer = Buffer.from(input.fileData, 'base64');
+        const key = `photos/${ctx.user.id}/${nanoid()}-${input.fileName}`;
+        const { url } = await storagePut(key, buffer, input.contentType);
+        return { url, key };
+      }),
+  }),
+
+  // ============ FORUM ROUTER ============
+  forum: router({
+    getCategories: publicProcedure.query(async () => {
+      return db.getForumCategories();
+    }),
+
+    getTopics: publicProcedure
+      .input(z.object({
+        categoryId: z.number().optional(),
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ input }) => {
+        const [items, total] = await Promise.all([
+          db.getForumTopics(input),
+          db.getForumTopicCount(input.categoryId),
+        ]);
+        return { items, total };
+      }),
+
+    getTopic: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return db.getForumTopicById(input.id);
+      }),
+
+    createTopic: protectedProcedure
+      .input(z.object({
+        categoryId: z.number(),
+        title: z.string().min(3).max(255),
+        content: z.string().min(10).max(10000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const topicId = await db.createForumTopic({
+          categoryId: input.categoryId,
+          authorId: ctx.user.id,
+          title: input.title,
+          content: input.content,
+        });
+        return { topicId };
+      }),
+
+    getReplies: publicProcedure
+      .input(z.object({ topicId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getForumReplies(input.topicId);
+      }),
+
+    createReply: protectedProcedure
+      .input(z.object({
+        topicId: z.number(),
+        content: z.string().min(1).max(5000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const topic = await db.getForumTopicById(input.topicId);
+        if (!topic) throw new TRPCError({ code: 'NOT_FOUND' });
+        if (topic.isLocked) throw new TRPCError({ code: 'FORBIDDEN', message: 'Topic is locked' });
+        const replyId = await db.createForumReply({
+          topicId: input.topicId,
+          authorId: ctx.user.id,
+          content: input.content,
+        });
+        return { replyId };
+      }),
+
+    vote: protectedProcedure
+      .input(z.object({
+        topicId: z.number().optional(),
+        replyId: z.number().optional(),
+        voteType: z.enum(['upvote', 'downvote']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await db.toggleForumVote(
+          ctx.user.id,
+          input.topicId || null,
+          input.replyId || null,
+          input.voteType,
+        );
+        return { voteType: result };
+      }),
+  }),
+
+  // ============ USER PROFILE ROUTER ============
+  profile: router({
+    getMy: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserProfile(ctx.user.id);
+    }),
+
+    getPublic: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getPublicUserProfile(input.userId);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        displayName: z.string().max(100).optional(),
+        pronouns: z.string().max(50).optional(),
+        identityType: z.enum(['crossdresser', 'femboy', 'transgender', 'non_binary', 'questioning', 'ally', 'other']).optional(),
+        lookingFor: z.array(z.string()).optional(),
+        interests: z.array(z.string()).optional(),
+        location: z.string().max(100).optional(),
+        showLocation: z.boolean().optional(),
+        ageRange: z.string().max(20).optional(),
+        experienceLevel: z.enum(['curious', 'beginner', 'intermediate', 'experienced', 'mentor']).optional(),
+        socialLinks: z.record(z.string(), z.string()).optional(),
+        isPublic: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.upsertUserProfile(ctx.user.id, input as any);
+        return { success: true };
+      }),
+
+    getTransformations: publicProcedure
+      .input(z.object({
+        userId: z.number().optional(),
+        category: z.string().optional(),
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ input }) => {
+        return db.getTransformations({ ...input });
+      }),
+
+    addTransformation: protectedProcedure
+      .input(z.object({
+        title: z.string().min(3).max(255),
+        description: z.string().optional(),
+        beforeImageUrl: z.string(),
+        afterImageUrl: z.string(),
+        category: z.enum(['mtf', 'ftm', 'crossdress', 'makeup', 'fashion', 'cosplay', 'other']).default('other'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createTransformation({
+          userId: ctx.user.id,
+          title: input.title,
+          beforeImageUrl: input.beforeImageUrl,
+          afterImageUrl: input.afterImageUrl,
+          category: input.category,
+          description: input.description ?? null,
+        });
+        return { id };
+      }),
+  }),
 });
 
 // Helper function to parse YouTube duration (PT1M30S -> 90)

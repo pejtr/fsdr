@@ -110,7 +110,7 @@ const TGTF_TEMPLATES = [
     description: "Bratr a sestra si vymění těla pomocí magického artefaktu",
     category: "body_swap",
     tags: ["tg", "tf", "mtf", "body_swap", "siblings"],
-    thumbnail: "/templates/sisters-exchange.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/oZktAfCnXeCaEPrA.jpg",
     scenes: [
       { type: "intro", prompt: "Young man discovers ancient medallion in sister's room, curious expression, cinematic lighting" },
       { type: "transformation", prompt: "Magical transformation sequence, body morphing, glowing energy, male to female transition" },
@@ -124,7 +124,7 @@ const TGTF_TEMPLATES = [
     description: "Přání se splní a muž se stane ženou svých snů",
     category: "transformation",
     tags: ["tg", "tf", "mtf", "wish", "magic"],
-    thumbnail: "/templates/wishing-to-be-her.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/RNlZVdxLjCxLQDdN.jpg",
     scenes: [
       { type: "intro", prompt: "Man looking longingly at beautiful woman, desire in eyes, romantic atmosphere" },
       { type: "wish", prompt: "Making a wish under starlight, mystical atmosphere, hopeful expression" },
@@ -138,7 +138,7 @@ const TGTF_TEMPLATES = [
     description: "Temná transformace s nadpřirozenými prvky",
     category: "transformation",
     tags: ["tg", "tf", "mtf", "dark", "supernatural"],
-    thumbnail: "/templates/hells-life-saga.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/CdUMTnwfRBJRxRGn.jpg",
     scenes: [
       { type: "intro", prompt: "Dark mysterious setting, ominous atmosphere, man encountering supernatural entity" },
       { type: "curse", prompt: "Demonic curse being cast, red glowing eyes, dark magic swirling" },
@@ -152,7 +152,7 @@ const TGTF_TEMPLATES = [
     description: "Začínající čarodějka omylem transformuje muže",
     category: "magic",
     tags: ["tg", "tf", "mtf", "witch", "magic", "accident"],
-    thumbnail: "/templates/baby-witch.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/hOFkIyLRXvaJyagb.jpg",
     scenes: [
       { type: "intro", prompt: "Young witch practicing spells, magical room with candles and potions" },
       { type: "accident", prompt: "Spell goes wrong, magical explosion, surprised expressions" },
@@ -166,7 +166,7 @@ const TGTF_TEMPLATES = [
     description: "Hra s osudem - magická ruleta rozhoduje o transformaci",
     category: "game",
     tags: ["tg", "tf", "mtf", "game", "roulette", "chance"],
-    thumbnail: "/templates/magic-roulette.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/DFUEzTcUnsgkzbGP.jpg",
     scenes: [
       { type: "intro", prompt: "Mystical roulette wheel glowing with magic, group of people watching nervously" },
       { type: "spin", prompt: "Roulette spinning with magical energy, anticipation, dramatic lighting" },
@@ -180,7 +180,7 @@ const TGTF_TEMPLATES = [
     description: "Rodinná dynamika se změní po transformaci",
     category: "family",
     tags: ["tg", "tf", "mtf", "family", "stepmother"],
-    thumbnail: "/templates/stepmother-daughters.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/nmGqMDmIYXzbKwzT.jpg",
     scenes: [
       { type: "intro", prompt: "Family dinner scene, tension between stepson and stepmother" },
       { type: "conflict", prompt: "Argument escalating, emotional confrontation" },
@@ -194,7 +194,7 @@ const TGTF_TEMPLATES = [
     description: "Tajemný hotel kde se hosté transformují",
     category: "location",
     tags: ["tg", "tf", "mtf", "hotel", "mystery"],
-    thumbnail: "/templates/hotel-aphrodite.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/aCjsmeyrtOVpZpKn.jpg",
     scenes: [
       { type: "intro", prompt: "Elegant mysterious hotel entrance, art deco style, man checking in" },
       { type: "discovery", prompt: "Strange occurrences in hotel room, mirrors showing different reflection" },
@@ -208,7 +208,7 @@ const TGTF_TEMPLATES = [
     description: "Vědecký experiment s neočekávanými výsledky",
     category: "scifi",
     tags: ["tg", "tf", "mtf", "science", "experiment"],
-    thumbnail: "/templates/chromosome-of-desire.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/cxuSuDQVgABsmOJM.jpg",
     scenes: [
       { type: "intro", prompt: "Scientific laboratory, DNA research, scientist examining samples" },
       { type: "experiment", prompt: "Experimental procedure, high-tech equipment, subject in chamber" },
@@ -222,7 +222,7 @@ const TGTF_TEMPLATES = [
     description: "Zvědavost vede k neočekávané transformaci",
     category: "discovery",
     tags: ["tg", "tf", "mtf", "curiosity", "siblings"],
-    thumbnail: "/templates/my-sisters-room.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/PpBbhdiDTTpUyQrs.jpg",
     scenes: [
       { type: "intro", prompt: "Brother sneaking into sister's room, curious expression, feminine decor" },
       { type: "discovery", prompt: "Finding mysterious object or clothing, temptation" },
@@ -236,7 +236,7 @@ const TGTF_TEMPLATES = [
     description: "Kosmická událost způsobuje hromadné transformace",
     category: "cosmic",
     tags: ["tg", "tf", "mtf", "comet", "cosmic", "mass_transformation"],
-    thumbnail: "/templates/tgtf-comet.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/QTrbsOjwablyuJwo.jpg",
     scenes: [
       { type: "intro", prompt: "Night sky with approaching comet, people watching in awe" },
       { type: "impact", prompt: "Comet's energy wave hitting Earth, cosmic light washing over city" },
@@ -250,7 +250,7 @@ const TGTF_TEMPLATES = [
     description: "Přátelství se změní po transformaci",
     category: "relationship",
     tags: ["tg", "tf", "mtf", "friendship", "girlfriend"],
-    thumbnail: "/templates/girlfriends-friend.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/PfiJVmuAEPVNzxSx.jpg",
     scenes: [
       { type: "intro", prompt: "Couple with female friend, social gathering, casual atmosphere" },
       { type: "jealousy", prompt: "Tension and jealousy building, emotional undercurrents" },
@@ -264,7 +264,7 @@ const TGTF_TEMPLATES = [
     description: "Online identita se stane realitou",
     category: "digital",
     tags: ["tg", "tf", "mtf", "online", "goth", "avatar"],
-    thumbnail: "/templates/online-goth-girl.jpg",
+    thumbnail: "https://files.manuscdn.com/user_upload_by_module/session_file/89740521/urhPxQMzmcQWXPAR.jpg",
     scenes: [
       { type: "intro", prompt: "Person creating female goth avatar online, dark aesthetic, computer screen" },
       { type: "immersion", prompt: "Deep connection with online persona, blurring reality" },

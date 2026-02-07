@@ -83,9 +83,10 @@ export default function Header() {
 
   const navLinks = [
     { href: "/browse", label: "Procházet" },
+    { href: "/photos", label: "Fotogalerie" },
+    { href: "/forum", label: "Fórum" },
     { href: "/crossdresser", label: "Crossdresser" },
     { href: "/femboy", label: "Femboy Hub" },
-    { href: "/gallery", label: "Galerie" },
     ...(isAuthenticated && user?.role === 'creator' ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(isAuthenticated ? [{ href: "/subscriptions", label: "Odběry" }] : []),
     ...(user?.role === 'admin' ? [{ href: "/admin", label: "Admin" }] : []),
@@ -241,6 +242,12 @@ export default function Header() {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
+                  <Link href="/profile">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Můj profil
+                    </DropdownMenuItem>
+                  </Link>
                   {user?.role === 'creator' && (
                     <Link href="/dashboard">
                       <DropdownMenuItem className="cursor-pointer">
