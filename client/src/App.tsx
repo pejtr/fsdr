@@ -29,6 +29,7 @@ import CommunityForum from "./pages/CommunityForum";
 import Leaderboard from "./pages/Leaderboard";
 import AccountRecovery from "./pages/AccountRecovery";
 import { SocialProofWidget } from "./components/SocialProofWidget";
+import { OnboardingWizard } from "./components/OnboardingWizard";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -87,6 +88,7 @@ function App() {
           <Toaster />
           <Router />
           <SocialProofWidget />
+          <OnboardingWizard />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

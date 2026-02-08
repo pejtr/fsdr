@@ -2760,6 +2760,18 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
       }));
     }),
   }),
+
+  // ============ ONBOARDING ============
+  onboarding: router({
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const completed = await db.getOnboardingStatus(ctx.user.id);
+      return { completed };
+    }),
+    complete: protectedProcedure.mutation(async ({ ctx }) => {
+      await db.completeOnboarding(ctx.user.id);
+      return { success: true };
+    }),
+  }),
 });
 
 // Helper function to parse YouTube duration (PT1M30S -> 90)

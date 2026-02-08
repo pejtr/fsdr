@@ -2973,3 +2973,24 @@ export async function createPremiumSubscription(data: {
   });
   return result[0]?.insertId;
 }
+
+// ============ ONBOARDING FUNCTIONS ============
+
+export async function getOnboardingStatus(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return true; // default to completed if no db
+  const [user] = await db.select({ onboardingCompleted: users.onboardingCompleted })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return user?.onboardingCompleted ?? false;
+}
+
+export async function completeOnboarding(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(users)
+    .set({ onboardingCompleted: true })
+    .where(eq(users.id, userId));
+  return true;
+}

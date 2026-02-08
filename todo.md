@@ -362,3 +362,13 @@
 - [x] Account Recovery stránka s FAQ a možnostmi
 - [x] N/A - OAuth systém (bez hesel)
 - [x] N/A - OAuth systém (bez hesel)
+
+## Onboarding Wizard
+
+- [x] DB: přidat onboardingCompleted flag na users tabulku
+- [x] Backend: endpoint pro kontrolu a dokončení onboardingu
+- [x] Frontend: OnboardingWizard komponenta s kroky (Welcome, Procházet obsah, Fórum, Gamifikace, Affiliate, Předplatné)
+- [x] Animace a progress bar mezi kroky
+- [x] Integrace do App.tsx (trigger po prvním přihlášení)
+- [x] Skip/přeskočit možnost
+- [x] Testy pro onboarding flow (18 testů, celkem 183)

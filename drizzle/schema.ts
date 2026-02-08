@@ -14,6 +14,7 @@ export const users = mysqlTable("users", {
   isAgeVerified: boolean("isAgeVerified").default(false),
   affiliateCode: varchar("affiliateCode", { length: 32 }).unique(),
   referredBy: int("referredBy"),
+  onboardingCompleted: boolean("onboardingCompleted").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
