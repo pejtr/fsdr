@@ -127,6 +127,20 @@
       "when": 1775967979492,
       "tag": "0017_large_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1775968832038,
+      "tag": "0018_curious_donald_blake",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1775969957080,
+      "tag": "0019_pink_exodus",
+      "breakpoints": true
     }
   ]
 }

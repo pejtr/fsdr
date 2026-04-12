@@ -1129,3 +1129,142 @@ export const onboardingEvents = mysqlTable("onboardingEvents", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type OnboardingEvent = typeof onboardingEvents.$inferSelect;
+
+// ============ FAN CRM (Supercreator + CreatorHero) ============
+export const fanProfiles = mysqlTable("fanProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  creatorId: int("creatorId").notNull(),
+  segment: mysqlEnum("segment", ["new", "active", "vip", "inactive", "churned"]).default("new").notNull(),
+  tags: text("tags"),
+  ltv: decimal("ltv", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  totalMessages: int("totalMessages").default(0).notNull(),
+  lastActivity: timestamp("lastActivity"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type FanProfile = typeof fanProfiles.$inferSelect;
+
+// ============ MASS MESSAGING (Supercreator + CreatorHero) ============
+export const massCampaigns = mysqlTable("massCampaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorId: int("creatorId").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  targetSegment: mysqlEnum("targetSegment", ["all", "new", "active", "vip", "inactive", "churned"]).default("all").notNull(),
+  status: mysqlEnum("status", ["draft", "scheduled", "sent", "failed"]).default("draft").notNull(),
+  sentCount: int("sentCount").default(0).notNull(),
+  openCount: int("openCount").default(0).notNull(),
+  replyCount: int("replyCount").default(0).notNull(),
+  scheduledAt: timestamp("scheduledAt"),
+  sentAt: timestamp("sentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MassCampaign = typeof massCampaigns.$inferSelect;
+
+// ============ AI PERSONAS (ChatPersona + FlirtFlow) ============
+export const aiPersonas = mysqlTable("aiPersonas", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorId: int("creatorId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  personality: mysqlEnum("personality", ["flirty", "friendly", "professional", "playful", "mysterious"]).default("friendly").notNull(),
+  tone: mysqlEnum("tone", ["casual", "formal", "seductive", "sweet", "bold"]).default("casual").notNull(),
+  language: varchar("language", { length: 10 }).default("cs").notNull(),
+  systemPrompt: text("systemPrompt"),
+  isActive: boolean("isActive").default(false).notNull(),
+  autoReply: boolean("autoReply").default(false).notNull(),
+  replyDelay: int("replyDelay").default(30).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type AiPersona = typeof aiPersonas.$inferSelect;
+
+// ============ WINBACK CAMPAIGNS (FlirtFlow + CreatorHero) ============
+export const winbackCampaigns = mysqlTable("winbackCampaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorId: int("creatorId").notNull(),
+  triggerDays: int("triggerDays").default(30).notNull(),
+  message: text("message").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  sentCount: int("sentCount").default(0).notNull(),
+  reconvertedCount: int("reconvertedCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WinbackCampaign = typeof winbackCampaigns.$inferSelect;
+
+// ============ TEAM MANAGEMENT (OnlyMonster) ============
+export const teamMembers = mysqlTable("teamMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorId: int("creatorId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["manager", "chatter", "analyst", "moderator"]).default("chatter").notNull(),
+  permissions: text("permissions"),
+  isActive: boolean("isActive").default(true).notNull(),
+  invitedAt: timestamp("invitedAt").defaultNow().notNull(),
+  acceptedAt: timestamp("acceptedAt"),
+});
+export type TeamMember = typeof teamMembers.$inferSelect;
+
+// ============ SMART REPLY SUGGESTIONS (ChatPersona) ============
+export const smartReplySuggestions = mysqlTable("smartReplySuggestions", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorId: int("creatorId").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  triggerKeywords: text("triggerKeywords"),
+  replyText: text("replyText").notNull(),
+  usageCount: int("usageCount").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SmartReplySuggestion = typeof smartReplySuggestions.$inferSelect;
+
+// ============ SEEDANCE 2.0 AI VIDEO PROMPT STUDIO ============
+export const promptTemplates = mysqlTable("promptTemplates", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  category: mysqlEnum("category", [
+    "cinematic",
+    "transformation",
+    "time_freeze",
+    "action",
+    "fantasy",
+    "romance",
+    "horror",
+    "comedy",
+    "custom",
+  ]).notNull(),
+  engine: varchar("engine", { length: 50 }).default("seedance-2.0").notNull(),
+  prompt: text("prompt").notNull(),
+  negativePrompt: text("negativePrompt"),
+  tags: text("tags"),
+  cameraStyle: varchar("cameraStyle", { length: 100 }),
+  duration: int("duration").default(15),
+  aspectRatio: varchar("aspectRatio", { length: 20 }).default("16:9"),
+  isPublic: boolean("isPublic").default(true).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(),
+  usageCount: int("usageCount").default(0).notNull(),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PromptTemplate = typeof promptTemplates.$inferSelect;
+
+export const userVideoProjects = mysqlTable("userVideoProjects", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  templateId: int("templateId"),
+  prompt: text("prompt").notNull(),
+  negativePrompt: text("negativePrompt"),
+  engine: varchar("engine", { length: 50 }).default("seedance-2.0").notNull(),
+  duration: int("duration").default(15),
+  aspectRatio: varchar("aspectRatio", { length: 20 }).default("16:9"),
+  status: mysqlEnum("status", ["draft", "generating", "completed", "failed"]).default("draft").notNull(),
+  videoUrl: text("videoUrl"),
+  thumbnailUrl: text("thumbnailUrl"),
+  errorMessage: text("errorMessage"),
+  taskId: varchar("taskId", { length: 200 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserVideoProject = typeof userVideoProjects.$inferSelect;

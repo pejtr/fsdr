@@ -89,6 +89,7 @@ export default function Header() {
     { href: "/leaderboard", label: "Leaderboard" },
     { href: "/femboy", label: "Femboy Hub" },
     ...(isAuthenticated && user?.role === 'creator' ? [{ href: "/dashboard", label: "Dashboard" }] : []),
+    ...(isAuthenticated ? [{ href: "/creator-studio", label: "Studio" }] : []),
     ...(isAuthenticated ? [{ href: "/subscriptions", label: "Odběry" }] : []),
     ...(user?.role === 'admin' ? [{ href: "/admin", label: "Admin" }] : []),
   ];

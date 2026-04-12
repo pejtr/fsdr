@@ -28,6 +28,7 @@ import PhotoGallery from "./pages/PhotoGallery";
 import CommunityForum from "./pages/CommunityForum";
 import Leaderboard from "./pages/Leaderboard";
 import AccountRecovery from "./pages/AccountRecovery";
+import CreatorStudio from "./pages/CreatorStudio";
 import { SocialProofWidget } from "./components/SocialProofWidget";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 
@@ -66,6 +67,7 @@ function Router() {
           <Route path="/video-recreate" component={VideoRecreateStudio} />
           <Route path="/gallery" component={Gallery} />
           <Route path="/profile" component={UserProfile} />
+          <Route path="/creator-studio" component={CreatorStudio} />
         </>
       )}
       

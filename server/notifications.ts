@@ -314,12 +314,19 @@ export async function notifyNewFollower(
 }
 
 /**
- * Send welcome notification to new user
+ * Send welcome notification to new user (push + email)
  */
 export async function sendWelcomeNotification(
   userId: number,
-  userName: string
+  userName: string,
+  userEmail?: string | null
 ): Promise<boolean> {
+  // Also send real email if available (fire-and-forget)
+  if (userEmail) {
+    import('./email').then(({ sendWelcomeEmail }) => {
+      sendWelcomeEmail({ name: userName, email: userEmail }).catch(console.error);
+    });
+  }
   return sendPushNotification(userId, {
     type: 'welcome',
     title: `🎉 Vítej na FEMSIDER, ${userName}!`,

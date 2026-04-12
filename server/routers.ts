@@ -2611,23 +2611,40 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
 
     // Send weekly digest notification to all active users (admin only)
     sendWeeklyDigest: adminProcedure.mutation(async () => {
+      const { sendWeeklyDigestEmail } = await import('./email');
       const leaderboard = await db.getReputationLeaderboard(200);
       let sent = 0;
+      let emailsSent = 0;
       for (const entry of leaderboard) {
         const user = await db.getUserById(entry.userId);
         if (!user) continue;
         const badges = await db.getUserBadgesWithDetails(entry.userId);
-        const earnedCount = badges.filter((b: any) => b.earned).length;
+        const earnedBadges = badges.filter((b: any) => b.earned);
+        const recentBadgeNames = earnedBadges.slice(-3).map((b: any) => b.name || b.badgeName || '');
         const position = leaderboard.findIndex((e: any) => e.userId === entry.userId) + 1;
+        // Push notification
         await db.createNotification({
           userId: entry.userId,
           type: 'system',
-          title: 'Weekly Community Digest',
-          content: `You have ${entry.points} points (rank: ${entry.rank}, #${position} on leaderboard). Badges: ${earnedCount}/${badges.length}. Keep contributing!`,
+          title: '\uD83D\uDCCA Weekly Community Digest',
+          content: `Týdení přehled: ${entry.points} bodů (rank: ${entry.rank}, #${position} na leaderboardu). Odznaky: ${earnedBadges.length}/${badges.length}. Pokračuj!`,
         });
         sent++;
+        // Real email
+        if (user.email) {
+          const forumTopics = await db.getForumTopics({ limit: 10, offset: 0 });
+          const newTopicsCount = Array.isArray(forumTopics) ? forumTopics.length : 0;
+          const ok = await sendWeeklyDigestEmail({
+            user: { name: user.name, email: user.email },
+            pointsEarned: entry.points,
+            newBadges: recentBadgeNames,
+            leaderboardRank: position,
+            newTopics: newTopicsCount,
+          });
+          if (ok) emailsSent++;
+        }
       }
-      return { success: true, notificationsSent: sent };
+      return { success: true, notificationsSent: sent, emailsSent };
     }),
   }),
 
@@ -2793,6 +2810,329 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
     getRecommendations: protectedProcedure.query(async ({ ctx }) => {
       return await db.getPersonalizedRecommendations(ctx.user.id);
     }),
+    // A/B test: get step order variant for this user
+    getStepVariant: protectedProcedure.query(async ({ ctx }) => {
+      // Deterministic assignment based on user ID parity
+      // Variant A (control): Welcome -> Browse -> Forum -> Gamification -> Affiliate -> Subscription
+      // Variant B (test): Welcome -> Subscription -> Forum -> Gamification -> Browse -> Affiliate
+      const variant = ctx.user.id % 2 === 0 ? 'A' : 'B';
+      const stepOrderA = ['welcome', 'browse', 'forum', 'gamification', 'affiliate', 'subscription'];
+      const stepOrderB = ['welcome', 'subscription', 'forum', 'gamification', 'browse', 'affiliate'];
+      return {
+        variant,
+        stepOrder: variant === 'A' ? stepOrderA : stepOrderB,
+        description: variant === 'A' ? 'Control (Subscription last)' : 'Test (Subscription early)',
+      };
+    }),
+  }),
+
+  // ============ FAN CRM (Supercreator + CreatorHero) ============
+  fanCrm: router({
+    getProfiles: protectedProcedure
+      .input(z.object({ segment: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getFanProfiles(ctx.user.id, input.segment);
+      }),
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getFanCrmStats(ctx.user.id);
+    }),
+    updateProfile: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        segment: z.enum(['new', 'active', 'vip', 'inactive', 'churned']).optional(),
+        tags: z.string().optional(),
+        notes: z.string().optional(),
+        ltv: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { userId, ...data } = input;
+        await db.upsertFanProfile(ctx.user.id, userId, data);
+        return { success: true };
+      }),
+    getInactiveFans: protectedProcedure
+      .input(z.object({ days: z.number().default(30) }))
+      .query(async ({ ctx, input }) => {
+        return await db.getInactiveFans(ctx.user.id, input.days);
+      }),
+  }),
+
+  // ============ MASS MESSAGING (Supercreator + CreatorHero) ============
+  massCampaign: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getMassCampaigns(ctx.user.id);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        message: z.string().min(1),
+        targetSegment: z.enum(['all', 'new', 'active', 'vip', 'inactive', 'churned']).default('all'),
+        scheduledAt: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createMassCampaign({
+          creatorId: ctx.user.id,
+          title: input.title,
+          message: input.message,
+          targetSegment: input.targetSegment,
+          status: 'draft',
+          scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
+        });
+        return { id };
+      }),
+    send: protectedProcedure
+      .input(z.object({ campaignId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.sendMassCampaign(input.campaignId, ctx.user.id);
+      }),
+  }),
+
+  // ============ AI PERSONAS (ChatPersona + FlirtFlow) ============
+  aiPersona: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getAiPersonas(ctx.user.id);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        personality: z.enum(['flirty', 'friendly', 'professional', 'playful', 'mysterious']),
+        tone: z.enum(['casual', 'formal', 'seductive', 'sweet', 'bold']),
+        language: z.string().default('cs'),
+        systemPrompt: z.string().optional(),
+        autoReply: z.boolean().default(false),
+        replyDelay: z.number().default(30),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createAiPersona({
+          creatorId: ctx.user.id,
+          name: input.name,
+          personality: input.personality,
+          tone: input.tone,
+          language: input.language,
+          systemPrompt: input.systemPrompt || null,
+          isActive: false,
+          autoReply: input.autoReply,
+          replyDelay: input.replyDelay,
+        });
+        return { id };
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        personality: z.enum(['flirty', 'friendly', 'professional', 'playful', 'mysterious']).optional(),
+        tone: z.enum(['casual', 'formal', 'seductive', 'sweet', 'bold']).optional(),
+        isActive: z.boolean().optional(),
+        autoReply: z.boolean().optional(),
+        systemPrompt: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await db.updateAiPersona(id, ctx.user.id, data);
+        return { success: true };
+      }),
+    generateReply: protectedProcedure
+      .input(z.object({ personaId: z.number(), message: z.string() }))
+      .mutation(async ({ input }) => {
+        const reply = await db.generateAiReply(input.personaId, input.message);
+        return { reply };
+      }),
+    getSmartReplies: protectedProcedure
+      .input(z.object({ category: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getSmartReplySuggestions(ctx.user.id, input.category);
+      }),
+    createSmartReply: protectedProcedure
+      .input(z.object({
+        category: z.string(),
+        replyText: z.string(),
+        triggerKeywords: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createSmartReply({
+          creatorId: ctx.user.id,
+          category: input.category,
+          replyText: input.replyText,
+          triggerKeywords: input.triggerKeywords || null,
+          isActive: true,
+        });
+        return { id };
+      }),
+  }),
+
+  // ============ WINBACK CAMPAIGNS (FlirtFlow + CreatorHero) ============
+  winback: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getWinbackCampaigns(ctx.user.id);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        triggerDays: z.number().min(1).default(30),
+        message: z.string().min(1),
+        isActive: z.boolean().default(true),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createWinbackCampaign({
+          creatorId: ctx.user.id,
+          triggerDays: input.triggerDays,
+          message: input.message,
+          isActive: input.isActive,
+        });
+        return { id };
+      }),
+  }),
+
+  // ============ TEAM MANAGEMENT (OnlyMonster) ============
+  team: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getTeamMembers(ctx.user.id);
+    }),
+    add: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        role: z.enum(['manager', 'chatter', 'analyst', 'moderator']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.addTeamMember(ctx.user.id, input.userId, input.role);
+        return { id };
+      }),
+    remove: protectedProcedure
+      .input(z.object({ memberId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.removeTeamMember(input.memberId, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
+  // ============ SEEDANCE 2.0 AI VIDEO PROMPT STUDIO ============
+  promptStudio: router({
+    // Seed default templates on first call
+    seedTemplates: protectedProcedure.mutation(async () => {
+      await db.seedDefaultPromptTemplates();
+      return { success: true };
+    }),
+
+    // List all public templates (optionally filtered by category)
+    listTemplates: publicProcedure
+      .input(z.object({
+        category: z.enum(['cinematic','transformation','time_freeze','action','fantasy','romance','horror','comedy','custom']).optional(),
+        featuredOnly: z.boolean().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        await db.seedDefaultPromptTemplates();
+        return db.getPromptTemplates(input?.category, input?.featuredOnly);
+      }),
+
+    // Get single template
+    getTemplate: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return db.getPromptTemplateById(input.id);
+      }),
+
+    // Create custom template (creators only)
+    createTemplate: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(200),
+        category: z.enum(['cinematic','transformation','time_freeze','action','fantasy','romance','horror','comedy','custom']),
+        prompt: z.string().min(10),
+        negativePrompt: z.string().optional(),
+        tags: z.string().optional(),
+        cameraStyle: z.string().optional(),
+        duration: z.number().min(3).max(60).default(15),
+        aspectRatio: z.string().default('16:9'),
+        isPublic: z.boolean().default(false),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createPromptTemplate({
+          title: input.title,
+          category: input.category,
+          prompt: input.prompt,
+          negativePrompt: input.negativePrompt ?? null,
+          tags: input.tags ?? null,
+          cameraStyle: input.cameraStyle ?? null,
+          duration: input.duration,
+          aspectRatio: input.aspectRatio,
+          isPublic: input.isPublic,
+          engine: 'seedance-2.0',
+          isFeatured: false,
+          createdBy: ctx.user.id,
+        });
+        return { id };
+      }),
+
+    // List user's video projects
+    listProjects: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserPromptProjects(ctx.user.id);
+    }),
+
+    // Create a new video project (save prompt config)
+    createProject: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(200),
+        templateId: z.number().optional(),
+        prompt: z.string().min(10),
+        negativePrompt: z.string().optional(),
+        engine: z.string().default('seedance-2.0'),
+        duration: z.number().min(3).max(60).default(15),
+        aspectRatio: z.string().default('16:9'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.templateId) {
+          await db.incrementTemplateUsage(input.templateId);
+        }
+        const id = await db.createPromptProject({
+          userId: ctx.user.id,
+          title: input.title,
+          templateId: input.templateId ?? null,
+          prompt: input.prompt,
+          negativePrompt: input.negativePrompt ?? null,
+          engine: input.engine,
+          duration: input.duration,
+          aspectRatio: input.aspectRatio,
+          status: 'draft',
+          videoUrl: null,
+          thumbnailUrl: null,
+          errorMessage: null,
+          taskId: null,
+        });
+        return { id };
+      }),
+
+    // Generate video via MiniMax/AI (uses invokeLLM to build enhanced prompt)
+    generatePrompt: protectedProcedure
+      .input(z.object({
+        basePrompt: z.string().min(10),
+        style: z.string().optional(),
+        mood: z.string().optional(),
+        cameraMovement: z.string().optional(),
+        lighting: z.string().optional(),
+        duration: z.number().default(15),
+        aspectRatio: z.string().default('16:9'),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import('./_core/llm');
+        const systemPrompt = `You are an expert AI video prompt engineer specializing in Seedance 2.0 and similar AI video generation models. Your task is to enhance and optimize video prompts for maximum cinematic quality. Always structure prompts with: [SCENE], [CAMERA], [LIGHTING], [MOOD] sections. Include technical details like frame rate, resolution hints, color grade, lens type. Keep prompts under 300 words but highly detailed.`;
+        const userMsg = `Enhance this video prompt for Seedance 2.0:
+
+Base prompt: ${input.basePrompt}
+Style: ${input.style || 'cinematic'}
+Mood: ${input.mood || 'dramatic'}
+Camera movement: ${input.cameraMovement || 'smooth tracking'}
+Lighting: ${input.lighting || 'natural cinematic'}
+Duration: ${input.duration}s
+Aspect ratio: ${input.aspectRatio}
+
+Return ONLY the enhanced prompt text, no explanations.`;
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMsg },
+          ],
+        });
+        const rawContent = response.choices?.[0]?.message?.content ?? input.basePrompt;
+        const enhanced = typeof rawContent === 'string' ? rawContent : input.basePrompt;
+        return { enhancedPrompt: enhanced, originalPrompt: input.basePrompt };
+      }),
   }),
 });
 

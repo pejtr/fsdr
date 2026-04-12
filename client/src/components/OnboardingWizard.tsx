@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -155,6 +155,19 @@ export function OnboardingWizard() {
       enabled: isAuthenticated,
     });
 
+  // A/B test: get step order variant for this user
+  const { data: stepVariant } = trpc.onboarding.getStepVariant.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  // Reorder STEPS based on A/B test variant
+  const orderedSteps = useMemo(() => {
+    if (!stepVariant) return STEPS;
+    return stepVariant.stepOrder
+      .map((id: string) => STEPS.find((s) => s.id === id))
+      .filter(Boolean) as typeof STEPS;
+  }, [stepVariant]);
+
   const completeMutation = trpc.onboarding.complete.useMutation({
     onSuccess: () => {
       setIsVisible(false);
@@ -169,7 +182,7 @@ export function OnboardingWizard() {
   }, [isLoading, onboardingStatus, isAuthenticated]);
 
   const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
+    if (currentStep < orderedSteps.length - 1) {
       setDirection("next");
       setIsAnimating(true);
       setTimeout(() => {
@@ -199,7 +212,7 @@ export function OnboardingWizard() {
   };
 
   const handleCtaClick = () => {
-    const step = STEPS[currentStep];
+    const step = orderedSteps[currentStep];
     if (step.ctaLink) {
       completeMutation.mutate();
       setTimeout(() => navigate(step.ctaLink), 300);
@@ -212,9 +225,9 @@ export function OnboardingWizard() {
     return null;
   }
 
-  const step = STEPS[currentStep];
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
-  const isLastStep = currentStep === STEPS.length - 1;
+  const step = orderedSteps[currentStep];
+  const progress = ((currentStep + 1) / orderedSteps.length) * 100;
+  const isLastStep = currentStep === orderedSteps.length - 1;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

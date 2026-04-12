@@ -18,7 +18,15 @@ import {
   userProfiles, UserProfile,
   ctaTests, ctaVariants, socialProofEvents,
   premiumSubscriptions, PremiumSubscription,
-  onboardingEvents
+  onboardingEvents,
+  fanProfiles, FanProfile,
+  massCampaigns, MassCampaign,
+  aiPersonas, AiPersona,
+  winbackCampaigns, WinbackCampaign,
+  teamMembers, TeamMember,
+  smartReplySuggestions, SmartReplySuggestion,
+  promptTemplates, PromptTemplate,
+  userVideoProjects, UserVideoProject
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -3146,4 +3154,389 @@ export async function getPersonalizedRecommendations(userId: number): Promise<{
   // Sort by priority descending, return top 3
   sections.sort((a, b) => b.priority - a.priority);
   return { sections: sections.slice(0, 3) };
+}
+
+// ============ FAN CRM FUNCTIONS (Supercreator + CreatorHero) ============
+
+export async function getFanProfiles(creatorId: number, segment?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(fanProfiles.creatorId, creatorId)];
+  if (segment && segment !== 'all') {
+    conditions.push(eq(fanProfiles.segment, segment as FanProfile['segment']));
+  }
+  return db.select({
+    id: fanProfiles.id,
+    userId: fanProfiles.userId,
+    creatorId: fanProfiles.creatorId,
+    segment: fanProfiles.segment,
+    tags: fanProfiles.tags,
+    ltv: fanProfiles.ltv,
+    totalMessages: fanProfiles.totalMessages,
+    lastActivity: fanProfiles.lastActivity,
+    notes: fanProfiles.notes,
+    createdAt: fanProfiles.createdAt,
+    userName: users.name,
+    userEmail: users.email,
+    userAvatar: users.avatarUrl,
+  })
+  .from(fanProfiles)
+  .leftJoin(users, eq(fanProfiles.userId, users.id))
+  .where(and(...conditions))
+  .orderBy(desc(fanProfiles.ltv));
+}
+
+export async function upsertFanProfile(creatorId: number, userId: number, data: Partial<FanProfile>) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(fanProfiles)
+    .where(and(eq(fanProfiles.creatorId, creatorId), eq(fanProfiles.userId, userId)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db.update(fanProfiles).set({ ...data, updatedAt: new Date() })
+      .where(eq(fanProfiles.id, existing[0].id));
+  } else {
+    await db.insert(fanProfiles).values({ creatorId, userId, ...data });
+  }
+}
+
+export async function getFanCrmStats(creatorId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, vip: 0, inactive: 0, new: 0, totalLtv: '0' };
+  const [stats] = await db.select({
+    total: sql<number>`COUNT(*)`,
+    vip: sql<number>`SUM(CASE WHEN ${fanProfiles.segment} = 'vip' THEN 1 ELSE 0 END)`,
+    inactive: sql<number>`SUM(CASE WHEN ${fanProfiles.segment} = 'inactive' THEN 1 ELSE 0 END)`,
+    newFans: sql<number>`SUM(CASE WHEN ${fanProfiles.segment} = 'new' THEN 1 ELSE 0 END)`,
+    totalLtv: sql<string>`COALESCE(SUM(${fanProfiles.ltv}), 0)`,
+  }).from(fanProfiles).where(eq(fanProfiles.creatorId, creatorId));
+  return { total: stats.total, vip: stats.vip, inactive: stats.inactive, new: stats.newFans, totalLtv: stats.totalLtv };
+}
+
+// ============ MASS MESSAGING FUNCTIONS ============
+
+export async function createMassCampaign(data: Omit<MassCampaign, 'id' | 'sentCount' | 'openCount' | 'replyCount' | 'sentAt' | 'createdAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(massCampaigns).values({ ...data, sentCount: 0, openCount: 0, replyCount: 0 });
+  return result[0].insertId;
+}
+
+export async function getMassCampaigns(creatorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(massCampaigns).where(eq(massCampaigns.creatorId, creatorId)).orderBy(desc(massCampaigns.createdAt));
+}
+
+export async function sendMassCampaign(campaignId: number, creatorId: number) {
+  const db = await getDb();
+  if (!db) return { sent: 0 };
+  const [campaign] = await db.select().from(massCampaigns)
+    .where(and(eq(massCampaigns.id, campaignId), eq(massCampaigns.creatorId, creatorId))).limit(1);
+  if (!campaign) return { sent: 0 };
+  // Get target fans
+  const conditions = [eq(fanProfiles.creatorId, creatorId)];
+  if (campaign.targetSegment !== 'all') {
+    conditions.push(eq(fanProfiles.segment, campaign.targetSegment));
+  }
+  const fans = await db.select().from(fanProfiles).where(and(...conditions));
+  const sentCount = fans.length;
+  await db.update(massCampaigns).set({ status: 'sent', sentCount, sentAt: new Date() }).where(eq(massCampaigns.id, campaignId));
+  return { sent: sentCount };
+}
+
+// ============ AI PERSONA FUNCTIONS (ChatPersona + FlirtFlow) ============
+
+export async function getAiPersonas(creatorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiPersonas).where(eq(aiPersonas.creatorId, creatorId)).orderBy(desc(aiPersonas.createdAt));
+}
+
+export async function createAiPersona(data: Omit<AiPersona, 'id' | 'createdAt' | 'updatedAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(aiPersonas).values(data);
+  return result[0].insertId;
+}
+
+export async function updateAiPersona(id: number, creatorId: number, data: Partial<AiPersona>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(aiPersonas).set({ ...data, updatedAt: new Date() })
+    .where(and(eq(aiPersonas.id, id), eq(aiPersonas.creatorId, creatorId)));
+}
+
+export async function getActivePersona(creatorId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [persona] = await db.select().from(aiPersonas)
+    .where(and(eq(aiPersonas.creatorId, creatorId), eq(aiPersonas.isActive, true))).limit(1);
+  return persona;
+}
+
+export async function generateAiReply(personaId: number, userMessage: string): Promise<string> {
+  const db = await getDb();
+  if (!db) return '';
+  const [persona] = await db.select().from(aiPersonas).where(eq(aiPersonas.id, personaId)).limit(1);
+  if (!persona) return '';
+  const { invokeLLM } = await import('./_core/llm');
+  const systemPrompt = persona.systemPrompt || 
+    `You are ${persona.name}, a ${persona.personality} creator with a ${persona.tone} tone. Respond in ${persona.language === 'cs' ? 'Czech' : 'English'}. Keep responses short (1-3 sentences), engaging, and in character.`;
+  const response = await invokeLLM({
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ]
+  });
+  const content = response.choices[0]?.message?.content;
+  return typeof content === 'string' ? content : '';
+}
+
+// ============ WINBACK CAMPAIGN FUNCTIONS (FlirtFlow + CreatorHero) ============
+
+export async function getWinbackCampaigns(creatorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(winbackCampaigns).where(eq(winbackCampaigns.creatorId, creatorId)).orderBy(desc(winbackCampaigns.createdAt));
+}
+
+export async function createWinbackCampaign(data: Omit<WinbackCampaign, 'id' | 'sentCount' | 'reconvertedCount' | 'createdAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(winbackCampaigns).values({ ...data, sentCount: 0, reconvertedCount: 0 });
+  return result[0].insertId;
+}
+
+export async function getInactiveFans(creatorId: number, dayThreshold: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const cutoffDate = new Date(Date.now() - dayThreshold * 24 * 60 * 60 * 1000);
+  return db.select({
+    id: fanProfiles.id,
+    userId: fanProfiles.userId,
+    userName: users.name,
+    lastActivity: fanProfiles.lastActivity,
+    ltv: fanProfiles.ltv,
+  })
+  .from(fanProfiles)
+  .leftJoin(users, eq(fanProfiles.userId, users.id))
+  .where(and(
+    eq(fanProfiles.creatorId, creatorId),
+    sql`(${fanProfiles.lastActivity} IS NULL OR ${fanProfiles.lastActivity} < ${cutoffDate})`
+  ))
+  .orderBy(desc(fanProfiles.ltv))
+  .limit(50);
+}
+
+// ============ TEAM MANAGEMENT FUNCTIONS (OnlyMonster) ============
+
+export async function getTeamMembers(creatorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: teamMembers.id,
+    creatorId: teamMembers.creatorId,
+    userId: teamMembers.userId,
+    role: teamMembers.role,
+    permissions: teamMembers.permissions,
+    isActive: teamMembers.isActive,
+    invitedAt: teamMembers.invitedAt,
+    acceptedAt: teamMembers.acceptedAt,
+    userName: users.name,
+    userEmail: users.email,
+    userAvatar: users.avatarUrl,
+  })
+  .from(teamMembers)
+  .leftJoin(users, eq(teamMembers.userId, users.id))
+  .where(and(eq(teamMembers.creatorId, creatorId), eq(teamMembers.isActive, true)));
+}
+
+export async function addTeamMember(creatorId: number, userId: number, role: TeamMember['role']) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(teamMembers).values({ creatorId, userId, role });
+  return result[0].insertId;
+}
+
+export async function removeTeamMember(id: number, creatorId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(teamMembers).set({ isActive: false }).where(and(eq(teamMembers.id, id), eq(teamMembers.creatorId, creatorId)));
+}
+
+// ============ SMART REPLY SUGGESTIONS (ChatPersona) ============
+
+export async function getSmartReplySuggestions(creatorId: number, category?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(smartReplySuggestions.creatorId, creatorId), eq(smartReplySuggestions.isActive, true)];
+  if (category) conditions.push(eq(smartReplySuggestions.category, category));
+  return db.select().from(smartReplySuggestions).where(and(...conditions)).orderBy(desc(smartReplySuggestions.usageCount));
+}
+
+export async function createSmartReply(data: Omit<SmartReplySuggestion, 'id' | 'usageCount' | 'createdAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(smartReplySuggestions).values({ ...data, usageCount: 0 });
+  return result[0].insertId;
+}
+
+export async function incrementSmartReplyUsage(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(smartReplySuggestions).set({ usageCount: sql`${smartReplySuggestions.usageCount} + 1` }).where(eq(smartReplySuggestions.id, id));
+}
+
+// ============ SEEDANCE 2.0 AI VIDEO PROMPT STUDIO ============
+export async function getPromptTemplates(category?: string, featuredOnly?: boolean) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(promptTemplates.isPublic, true)];
+  if (category) conditions.push(eq(promptTemplates.category, category as PromptTemplate['category']));
+  if (featuredOnly) conditions.push(eq(promptTemplates.isFeatured, true));
+  return db.select().from(promptTemplates)
+    .where(and(...conditions))
+    .orderBy(desc(promptTemplates.isFeatured), desc(promptTemplates.usageCount));
+}
+
+export async function getPromptTemplateById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(promptTemplates).where(eq(promptTemplates.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createPromptTemplate(data: Omit<PromptTemplate, 'id' | 'usageCount' | 'createdAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(promptTemplates).values({ ...data, usageCount: 0 });
+  return result[0].insertId;
+}
+
+export async function incrementTemplateUsage(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(promptTemplates).set({ usageCount: sql`${promptTemplates.usageCount} + 1` }).where(eq(promptTemplates.id, id));
+}
+
+export async function seedDefaultPromptTemplates() {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select({ id: promptTemplates.id }).from(promptTemplates).limit(1);
+  if (existing.length > 0) return; // Already seeded
+
+  const templates = [
+    {
+      title: "Time-Freeze Cinematic Sequence (Seedance 2.0)",
+      category: "time_freeze" as const,
+      engine: "seedance-2.0",
+      isFeatured: true,
+      isPublic: true,
+      prompt: `[SCENE OPEN] Ultra-slow-motion freeze-frame sequence. A beautiful woman in elegant attire stands in a luxurious interior. Time appears to stop completely — every particle of dust suspended mid-air, fabric frozen in a perfect wave, hair strands crystallized in motion. Camera performs a slow 360° orbit around the frozen figure. Cinematic lighting: golden hour rays pierce through tall windows, casting long dramatic shadows. The background world is completely frozen while the camera continues its graceful arc. Photorealistic, 8K quality, film grain texture, anamorphic lens flare. Color grade: warm teal-orange contrast. [CAMERA] Smooth orbital tracking shot, shallow depth of field, bokeh background.`,
+      negativePrompt: "blur, noise, low quality, cartoon, anime, distorted, ugly, bad anatomy",
+      tags: "time-freeze,cinematic,slow-motion,luxury,elegant",
+      cameraStyle: "360° orbital tracking, anamorphic",
+      duration: 15,
+      aspectRatio: "16:9",
+      createdBy: null,
+    },
+    {
+      title: "Sultry Boudoir Reveal",
+      category: "romance" as const,
+      engine: "seedance-2.0",
+      isFeatured: true,
+      isPublic: true,
+      prompt: `[SCENE] Intimate boudoir setting with soft diffused lighting. Silk sheets, candles, warm amber tones. Subject in elegant lingerie, slow confident movement toward camera. Shallow depth of field, bokeh background with fairy lights. Camera: slow push-in with slight upward tilt. Cinematic color grade: warm skin tones, deep shadows. [MOOD] Confident, sensual, artistic. Film grain, 4K resolution.`,
+      negativePrompt: "harsh lighting, flat colors, cartoon, low quality, distorted",
+      tags: "boudoir,romance,intimate,elegant,sensual",
+      cameraStyle: "slow push-in, shallow DOF",
+      duration: 10,
+      aspectRatio: "9:16",
+      createdBy: null,
+    },
+    {
+      title: "Fantasy Transformation Sequence",
+      category: "transformation" as const,
+      engine: "seedance-2.0",
+      isFeatured: true,
+      isPublic: true,
+      prompt: `[SCENE] Magical transformation sequence. Subject begins in everyday attire, surrounded by swirling particles of light. Gradual metamorphosis: clothing transforms into fantasy costume, hair flows dramatically, magical energy radiates outward. Particle effects: golden sparkles, ethereal glow. Camera: slow zoom out to reveal full transformation. [LIGHTING] Dramatic backlight, rim lighting, volumetric god rays. Epic cinematic score implied. 8K, photorealistic.`,
+      negativePrompt: "cheap effects, cartoon, anime, low quality, ugly, distorted",
+      tags: "transformation,fantasy,magic,particles,epic",
+      cameraStyle: "slow zoom out, dramatic backlight",
+      duration: 20,
+      aspectRatio: "16:9",
+      createdBy: null,
+    },
+    {
+      title: "Action Hero Entrance",
+      category: "action" as const,
+      engine: "seedance-2.0",
+      isFeatured: false,
+      isPublic: true,
+      prompt: `[SCENE] Dramatic hero entrance. Subject walks through smoke/fog toward camera with confident stride. Slow motion: 120fps effect. Background: urban environment, neon lights, rain-slicked streets. [CAMERA] Low angle tracking shot, wide lens distortion, dramatic Dutch angle. Lighting: high contrast, neon color spill (cyan/magenta). Sound design implied: bass rumble, cinematic impact. Photorealistic, 4K, film grain.`,
+      negativePrompt: "cartoon, anime, low quality, flat lighting, static",
+      tags: "action,hero,dramatic,neon,urban",
+      cameraStyle: "low angle tracking, Dutch angle",
+      duration: 12,
+      aspectRatio: "21:9",
+      createdBy: null,
+    },
+    {
+      title: "Cinematic Portrait — Golden Hour",
+      category: "cinematic" as const,
+      engine: "seedance-2.0",
+      isFeatured: false,
+      isPublic: true,
+      prompt: `[SCENE] Cinematic portrait during golden hour. Subject outdoors, natural environment (field, rooftop, or coastal cliff). Warm directional sunlight creates rim lighting and lens flare. Slow subtle movement: hair in breeze, slight turn toward camera. [CAMERA] Medium close-up, 85mm equivalent, extremely shallow DOF, creamy bokeh. Color grade: warm golden tones, lifted shadows, film emulation (Kodak Vision3 style). 8K, photorealistic, professional photography aesthetic.`,
+      negativePrompt: "harsh shadows, overexposed, cartoon, low quality, unnatural colors",
+      tags: "portrait,golden-hour,cinematic,outdoor,natural",
+      cameraStyle: "medium close-up, 85mm, shallow DOF",
+      duration: 8,
+      aspectRatio: "4:5",
+      createdBy: null,
+    },
+    {
+      title: "Horror — Dark Atmosphere",
+      category: "horror" as const,
+      engine: "seedance-2.0",
+      isFeatured: false,
+      isPublic: true,
+      prompt: `[SCENE] Atmospheric horror sequence. Dark corridor or abandoned mansion. Subject moves slowly through shadows, intermittent flickering light. Practical effects: fog, dust particles, shadows that move independently. [CAMERA] Handheld, slightly unstable, creeping zoom. Lighting: single practical source (candle/flashlight), deep shadows, high contrast. Color grade: desaturated, cold blue-green tones, crushed blacks. Sound design implied: silence punctuated by distant sounds. 4K, film grain.`,
+      negativePrompt: "bright colors, cheerful, cartoon, low quality, flat lighting",
+      tags: "horror,dark,atmospheric,shadows,tension",
+      cameraStyle: "handheld, creeping zoom",
+      duration: 15,
+      aspectRatio: "16:9",
+      createdBy: null,
+    },
+  ];
+
+  for (const template of templates) {
+    await db.insert(promptTemplates).values({ ...template, usageCount: 0 });
+  }
+}
+
+// ============ PROMPT PROJECT FUNCTIONS (for userVideoProjects table) ============
+export async function createPromptProject(data: Omit<UserVideoProject, 'id' | 'createdAt' | 'updatedAt'>) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(userVideoProjects).values(data);
+  return result[0].insertId;
+}
+
+export async function getUserPromptProjects(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(userVideoProjects)
+    .where(eq(userVideoProjects.userId, userId))
+    .orderBy(desc(userVideoProjects.createdAt));
+}
+
+export async function updatePromptProject(id: number, userId: number, data: Partial<UserVideoProject>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(userVideoProjects).set({ ...data, updatedAt: new Date() })
+    .where(and(eq(userVideoProjects.id, id), eq(userVideoProjects.userId, userId)));
 }

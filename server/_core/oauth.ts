@@ -45,7 +45,7 @@ export function registerOAuthRoutes(app: Express) {
       if (isNewUser) {
         const newUser = await db.getUserByOpenId(userInfo.openId);
         if (newUser) {
-          sendWelcomeNotification(newUser.id, userInfo.name || 'Nový člen').catch((err: unknown) =>
+          sendWelcomeNotification(newUser.id, userInfo.name || 'Nový člen', newUser.email).catch((err: unknown) =>
             console.error('[OAuth] Welcome notification failed:', err)
           );
         }

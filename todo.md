@@ -384,3 +384,75 @@
 - [x] Admin panel: onboarding analytics dashboard (Onboarding tab)
 - [x] DB: onboardingEvents tabulka pro tracking kroků
 - [x] Testy pro nové funkce (22 testů, celkem 205)
+
+## Email Marketing, Onboarding A/B Test & Stripe Guide
+
+### SendGrid Email Integration
+- [ ] SendGrid npm package install a konfigurace
+- [ ] SENDGRID_API_KEY secret v env
+- [ ] Email helper funkce (sendEmail wrapper)
+- [ ] Welcome email template (HTML) po registraci
+- [ ] Weekly digest email template s body/stats
+- [ ] Backend endpoint pro ruční odeslání weekly digest
+- [ ] Fallback na in-app notifikaci pokud SendGrid selže
+
+### Onboarding A/B Test (Step Ordering)
+- [ ] DB: onboardingVariant pole na users tabulce
+- [ ] Dvě varianty pořadí kroků (A: standard, B: Subscription jako 2. krok)
+- [ ] Backend: přiřazení varianty při prvním onboardingu
+- [ ] Frontend: OnboardingWizard načítá pořadí kroků z varianty
+- [ ] Tracking konverzí (kdo z variant B koupil předplatné)
+- [ ] Admin panel: výsledky A/B testu onboardingu
+
+### Stripe Setup Guide & Checkout Verification
+- [ ] Stránka /stripe-setup s průvodcem pro claim sandbox
+- [ ] Odkaz na claim URL v admin panelu
+- [ ] Vizuální checklist pro Stripe aktivaci (test → live)
+- [ ] Test checkout flow validace (ověřit že webhook funguje)
+- [ ] Testy pro email, A/B test a Stripe guide
+
+## Competitor Features Integration (Supercreator, ChatPersona, FlirtFlow, CreatorHero, OnlyMonster)
+
+### Fan CRM & Mass Messaging (Supercreator + CreatorHero)
+- [ ] Fan CRM tabulka (fan segments, tags, LTV, last activity)
+- [ ] Mass messaging systém (broadcast zprávy všem fanouškům)
+- [ ] Fan segmentace (VIP, inactive, new, high-spender)
+- [ ] CRM dashboard stránka pro tvůrce
+
+### AI Chat Automation & Personas (ChatPersona + FlirtFlow)
+- [ ] AI persona konfigurace (jméno, osobnost, styl komunikace)
+- [ ] Auto-reply na zprávy fanoušků (AI generované odpovědi)
+- [ ] Smart reply suggestions v chat UI
+- [ ] Multilingual chat support
+
+### Inactive Fan Re-engagement (FlirtFlow + CreatorHero)
+- [ ] Detekce neaktivních fanoušků (30+ dní bez aktivity)
+- [ ] Automatická re-engagement zpráva (winback flow)
+- [ ] Expiring subscription reminder notifikace
+- [ ] Win-back analytics (kolik fanoušků se vrátilo)
+
+### Team Management (OnlyMonster)
+- [ ] Týmové role (Owner, Manager, Chatter, Analyst)
+- [ ] Přiřazení chatters k tvůrcům
+- [ ] Team performance analytics
+- [ ] Role-based access control pro creator dashboard
+
+### Revenue & Traffic Analytics (Supercreator + OnlyMonster)
+- [ ] Revenue tracking dashboard (MRR, churn, LTV)
+- [ ] Traffic source analytics (odkud přicházejí fanoušci)
+- [ ] Pricing optimization suggestions (AI doporučení cen)
+- [ ] Conversion funnel analytics
+
+## Seedance 2.0 AI Video Prompt Studio
+
+- [x] DB: promptTemplates tabulka (id, title, category, engine, prompt, tags, isPublic)
+- [x] DB: userVideoProjects tabulka (id, userId, title, prompt, status, videoUrl)
+- [x] Backend: CRUD endpointy pro prompt templates
+- [x] Backend: endpoint pro generování videa přes MiniMax/Seedance API (AI prompt enhancement)
+- [x] Frontend: AI Video Studio tab v Creator Studio
+- [x] Frontend: Prompt Templates knihovna s kategoriemi
+- [x] Frontend: Time-Freeze preset (Seedance 2.0 prompt z PDF)
+- [x] Frontend: Prompt editor s live preview a parametry
+- [x] Frontend: Video projects gallery s historií generování
+- [x] Seed: 10+ prompt templates (cinematic, transformation, time-freeze, etc.)
+- [x] Testy pro Prompt Studio (22 testů, celkem 227)
