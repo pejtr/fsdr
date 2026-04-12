@@ -270,4 +270,137 @@
   .femsider-card:hover {
     border-color: oklch(0.6 0.15 180 / 0.5);
   }
+
+  /* ═══════════════════════════════════════════════════════════
+     PREMIUM LUXURY DESIGN SYSTEM — Video Best Practices
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Playfair Display for luxury display headings */
+  .font-display {
+    font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.01em;
+  }
+
+  /* Gold accent — premium VIP elements */
+  .gold-gradient {
+    background: linear-gradient(135deg, #C9A84C 0%, #F0D060 40%, #C9A84C 70%, #A07830 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gold-border {
+    border-color: oklch(0.72 0.12 75);
+  }
+
+  .gold-glow {
+    box-shadow: 0 0 20px oklch(0.72 0.12 75 / 0.35), 0 0 40px oklch(0.72 0.12 75 / 0.2);
+  }
+
+  /* Premium card with deeper shadow and subtle gradient */
+  .premium-card {
+    background: linear-gradient(145deg, oklch(0.14 0.025 180), oklch(0.11 0.015 180));
+    border: 1px solid oklch(0.28 0.04 180);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 24px oklch(0 0 0 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .premium-card:hover {
+    border-color: oklch(0.6 0.15 180 / 0.5);
+    box-shadow: 0 8px 40px oklch(0 0 0 / 0.5), 0 0 20px oklch(0.6 0.15 180 / 0.15), inset 0 1px 0 oklch(1 0 0 / 0.08);
+    transform: translateY(-2px);
+  }
+
+  /* Trust bar strip */
+  .trust-bar {
+    background: linear-gradient(90deg, oklch(0.1 0.02 180), oklch(0.13 0.03 180), oklch(0.1 0.02 180));
+    border-top: 1px solid oklch(0.6 0.15 180 / 0.15);
+    border-bottom: 1px solid oklch(0.6 0.15 180 / 0.15);
+  }
+
+  /* Social proof notification widget */
+  .social-proof-widget {
+    background: linear-gradient(135deg, oklch(0.14 0.025 180), oklch(0.12 0.02 180));
+    border: 1px solid oklch(0.6 0.15 180 / 0.3);
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 32px oklch(0 0 0 / 0.5), 0 0 15px oklch(0.6 0.15 180 / 0.1);
+    backdrop-filter: blur(12px);
+  }
+
+  /* Pricing card — popular tier highlight */
+  .pricing-popular {
+    background: linear-gradient(145deg, oklch(0.15 0.04 180), oklch(0.12 0.025 180));
+    border: 1.5px solid oklch(0.6 0.15 180 / 0.7);
+    box-shadow: 0 0 30px oklch(0.6 0.15 180 / 0.2), 0 8px 40px oklch(0 0 0 / 0.4);
+    border-radius: 0.75rem;
+  }
+
+  /* VIP pricing card — gold tier */
+  .pricing-vip {
+    background: linear-gradient(145deg, oklch(0.15 0.03 75), oklch(0.12 0.02 75));
+    border: 1.5px solid oklch(0.72 0.12 75 / 0.5);
+    box-shadow: 0 0 30px oklch(0.72 0.12 75 / 0.15), 0 8px 40px oklch(0 0 0 / 0.4);
+    border-radius: 0.75rem;
+  }
+
+  /* Sticky CTA bar */
+  .sticky-cta {
+    background: linear-gradient(90deg, oklch(0.1 0.02 180 / 0.95), oklch(0.12 0.03 180 / 0.95));
+    border-top: 1px solid oklch(0.6 0.15 180 / 0.3);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Content card hover with scale + glow */
+  .content-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .content-card:hover {
+    transform: scale(1.03) translateY(-3px);
+    box-shadow: 0 12px 40px oklch(0 0 0 / 0.5), 0 0 20px oklch(0.6 0.15 180 / 0.2);
+  }
+
+  /* Section divider with gradient fade */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.6 0.15 180 / 0.3), transparent);
+    margin: 0;
+  }
+
+  /* Large hero headline */
+  .hero-headline {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-shadow: 0 2px 20px oklch(0 0 0 / 0.5);
+  }
+
+  /* Premium badge */
+  .premium-badge {
+    background: linear-gradient(135deg, oklch(0.72 0.12 75 / 0.2), oklch(0.72 0.12 75 / 0.1));
+    border: 1px solid oklch(0.72 0.12 75 / 0.4);
+    color: oklch(0.82 0.12 75);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+  }
+
+  /* Verified badge */
+  .verified-badge {
+    background: linear-gradient(135deg, oklch(0.6 0.15 180 / 0.2), oklch(0.55 0.15 160 / 0.1));
+    border: 1px solid oklch(0.6 0.15 180 / 0.4);
+    color: oklch(0.75 0.15 180);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+  }
 }

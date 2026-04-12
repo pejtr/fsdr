@@ -456,3 +456,45 @@
 - [x] Frontend: Video projects gallery s historií generování
 - [x] Seed: 10+ prompt templates (cinematic, transformation, time-freeze, etc.)
 - [x] Testy pro Prompt Studio (22 testů, celkem 227)
+
+## Premium Design & Sales Maximization (Video Best Practices)
+
+### Landing Page Hero
+- [x] Hero: nahradit slider za looping video background (nebo high-res dark cinematic image)
+- [x] Hero: větší headline s premium Sans-Serif fontem (Inter/Playfair Display)
+- [x] Hero: silný USP text ("Exkluzivní TG/TF obsah. Ověřená kvalita. Bez kompromisů.")
+- [x] Hero: jeden dominantní CTA button (velký, high-contrast, action-oriented)
+- [x] Hero: ambient glow efekt za hlavním textem pro hloubku
+
+### Trust Bar (hned pod hero)
+- [x] Trust Bar: horizontální pruh s 5 social proof prvky (hodnocení, počet členů, videí, bezpečné platby, roky)
+- [x] Trust Bar: ikony + čísla + krátký popis
+
+### Pricing Psychology
+- [x] Pricing: přidat "NEJPOPULÁRNĚJŠÍ" badge na střední tier (anchor pricing)
+- [x] Pricing: přidat přeškrtnutou původní cenu + "Ušetříš 50%" na každém plánu
+- [x] Pricing: přidat urgency element ("Omezená nabídka - pouze do konce měsíce")
+- [x] Pricing: přidat risk reversal ("7 dní zdarma, zrušení kdykoliv")
+- [x] Pricing: přidat "Co dostaneš" checklist pod každý plán
+
+### Social Proof & Testimonials
+- [x] Přidat sekci s recenzemi/testimonials (hvězdičky + text + avatar)
+- [x] Real-time social proof widget ("Jana z Prahy právě se přihlásila k Premium")
+- [x] Počítadlo aktivních uživatelů v hero sekci
+
+### Typography & Color Upgrade
+- [x] Přidat Playfair Display pro display headings (luxusní serif)
+- [x] Zvětšit line-height a letter-spacing pro premium feel
+- [x] Přidat gold/bronze accent barvu (#C9A84C) pro VIP prvky
+- [x] Více negative space (padding) kolem sekcí
+
+### Product Cards (Tvůrci/Videa)
+- [x] Unifikovat aspect ratio všech karet (3:4)
+- [x] Přidat hover efekt s glow a scale transform
+- [x] Přidat "VERIFIED" badge na ověřené tvůrce
+- [x] Přidat cenu/tier badge na každou kartu
+
+### Conversion Elements
+- [x] Sticky CTA bar při scrollování dolů (mobilní)
+- [x] Exit-intent popup s personalizací dle CTA varianty
+- [x] Floating social proof notification widget

@@ -1,4 +1,6 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import os
+
+content = '''import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
 import { useState, useEffect, useRef } from "react";
@@ -15,7 +17,7 @@ import { toast } from "sonner";
 
 const SOCIAL_PROOF_EVENTS = [
   { name: "Tomáš K.", city: "Praha", action: "se přihlásil k VIP Insider", time: "před 2 min" },
-  { name: "Markéta S.", city: "Brno", action: "odemkla Sister's Exchange", time: "před 5 min" },
+  { name: "Markéta S.", city: "Brno", action: "odemkla Sister\'s Exchange", time: "před 5 min" },
   { name: "Jakub V.", city: "Ostrava", action: "se přihlásil k Komunita+", time: "před 8 min" },
   { name: "Lucie P.", city: "Plzeň", action: "se připojila ZDARMA", time: "před 11 min" },
   { name: "David M.", city: "Liberec", action: "upgradoval na VIP Insider", time: "před 14 min" },
@@ -93,12 +95,12 @@ export default function Home() {
   }, [isAuthenticated]);
 
   const lockedContent = [
-    { id: 1, title: "Sister's Exchange - Full TG", views: "12.4K", likes: 892 },
+    { id: 1, title: "Sister\'s Exchange - Full TG", views: "12.4K", likes: 892 },
     { id: 2, title: "Magic Roulette Transform", views: "8.7K", likes: 654 },
     { id: 3, title: "Wishing To Be Her - EP3", views: "15.2K", likes: 1203 },
     { id: 4, title: "AI Body Swap Studio", views: "6.3K", likes: 445 },
     { id: 5, title: "Symbiote Fusion TF", views: "9.1K", likes: 723 },
-    { id: 6, title: "The Mirror's Secret", views: "11.8K", likes: 967 },
+    { id: 6, title: "The Mirror\'s Secret", views: "11.8K", likes: 967 },
   ];
 
   const faqItems = [
@@ -673,3 +675,9 @@ function PostCard({ title, preview, image, likes, comments, locked }: {
     </div>
   );
 }
+'''
+
+path = '/home/ubuntu/femsider/client/src/pages/Home.tsx'
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+print(f"Written {len(content)} chars, {content.count(chr(10))} lines")
