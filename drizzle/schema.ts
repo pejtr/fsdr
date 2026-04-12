@@ -1119,3 +1119,13 @@ export const socialProofEvents = mysqlTable("socialProofEvents", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type SocialProofEvent = typeof socialProofEvents.$inferSelect;
+
+// ============ ONBOARDING EVENTS (analytics) ============
+export const onboardingEvents = mysqlTable("onboardingEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  stepId: varchar("stepId", { length: 50 }).notNull(),
+  action: mysqlEnum("action", ["view", "skip", "complete"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type OnboardingEvent = typeof onboardingEvents.$inferSelect;

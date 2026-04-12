@@ -13,6 +13,7 @@ import { trpc } from "@/lib/trpc";
 import { useCtaTest } from "@/hooks/useCtaTest";
 import { toast } from "sonner";
 
+
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [scrollY, setScrollY] = useState(0);
@@ -651,6 +652,9 @@ export default function Home() {
         </section>
       )}
 
+      {/* ========== PERSONALIZED RECOMMENDATIONS (for logged-in users) ========== */}
+      {isAuthenticated && <PersonalizedRecommendations />}
+
       {/* Footer */}
       <footer className="py-8 border-t border-[oklch(0.6_0.15_180)]/20">
         <div className="container">
@@ -752,5 +756,54 @@ function PostCard({ title, preview, image, likes, comments, locked }: {
         </div>
       </div>
     </div>
+  );
+}
+
+// ============ PERSONALIZED RECOMMENDATIONS COMPONENT ============
+function PersonalizedRecommendations() {
+  const { data, isLoading } = trpc.onboarding.getRecommendations.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const iconMap: Record<string, React.ReactNode> = {
+    subscription: <Crown className="h-5 w-5 text-[oklch(0.75_0.18_60)]" />,
+    forum: <MessageCircle className="h-5 w-5 text-[oklch(0.6_0.15_180)]" />,
+    photos: <Star className="h-5 w-5 text-[oklch(0.7_0.2_300)]" />,
+    gamification: <TrendingUp className="h-5 w-5 text-[oklch(0.65_0.2_140)]" />,
+    affiliate: <DollarSign className="h-5 w-5 text-[oklch(0.6_0.15_180)]" />,
+  };
+
+  if (isLoading || !data?.sections?.length) return null;
+
+  return (
+    <section className="py-12 border-t border-[oklch(0.6_0.15_180)]/20">
+      <div className="container">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-2 mb-6">
+            <Sparkles className="h-5 w-5 text-[oklch(0.6_0.15_180)]" />
+            <h2 className="text-xl font-bold">Doporučeno pro tebe</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {data.sections.map((rec: { type: string; title: string; description: string; link: string; priority: number }) => (
+              <Link key={rec.type} href={rec.link}>
+                <div className="symbiote-card p-5 hover:border-[oklch(0.6_0.15_180)]/50 transition-all cursor-pointer group">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-full bg-[oklch(0.6_0.15_180)]/10 flex items-center justify-center">
+                      {iconMap[rec.type] ?? <Sparkles className="h-5 w-5 text-[oklch(0.6_0.15_180)]" />}
+                    </div>
+                    <h3 className="font-semibold text-sm leading-tight">{rec.title}</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{rec.description}</p>
+                  <div className="mt-3 flex items-center gap-1 text-xs text-[oklch(0.6_0.15_180)] group-hover:gap-2 transition-all">
+                    <span>Přejít</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

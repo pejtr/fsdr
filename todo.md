@@ -372,3 +372,15 @@
 - [x] Integrace do App.tsx (trigger po prvním přihlášení)
 - [x] Skip/přeskočit možnost
 - [x] Testy pro onboarding flow (18 testů, celkem 183)
+
+## Onboarding Improvements (Admin Reset, Personalization, Analytics)
+
+- [x] Admin panel: tlačítko pro reset onboardingu vybraného uživatele
+- [x] Backend: adminResetOnboarding endpoint (admin only)
+- [x] Personalizovaná doporučení po dokončení onboardingu (homepage sekce)
+- [x] Backend: endpoint pro personalizovaná doporučení na základě aktivity
+- [x] Onboarding analytics: tracking step drop-off (který krok uživatelé přeskačují)
+- [x] Onboarding analytics: completion rate, avg steps completed
+- [x] Admin panel: onboarding analytics dashboard (Onboarding tab)
+- [x] DB: onboardingEvents tabulka pro tracking kroků
+- [x] Testy pro nové funkce (22 testů, celkem 205)

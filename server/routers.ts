@@ -2771,6 +2771,28 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
       await db.completeOnboarding(ctx.user.id);
       return { success: true };
     }),
+    // Admin: reset onboarding for a specific user
+    adminReset: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.resetOnboarding(input.userId);
+        return { success: true };
+      }),
+    // Admin: get onboarding analytics
+    getAnalytics: adminProcedure.query(async () => {
+      return await db.getOnboardingAnalytics();
+    }),
+    // Track step view for analytics
+    trackStep: protectedProcedure
+      .input(z.object({ stepId: z.string(), action: z.enum(['view', 'skip', 'complete']) }))
+      .mutation(async ({ ctx, input }) => {
+        await db.trackOnboardingStep(ctx.user.id, input.stepId, input.action);
+        return { success: true };
+      }),
+    // Get personalized recommendations
+    getRecommendations: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getPersonalizedRecommendations(ctx.user.id);
+    }),
   }),
 });
 

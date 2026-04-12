@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Video, Flag, Check, X, Eye, AlertTriangle, Shield, Users, 
-  BadgeCheck, FileWarning, UserX, Crown, MessageSquare, Gavel
+  BadgeCheck, FileWarning, UserX, Crown, MessageSquare, Gavel, Sparkles,
+  TrendingDown, BarChart2, RotateCcw
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -81,6 +82,16 @@ export default function AdminDashboard() {
   const seedBadgesMutation = trpc.gamification.seedBadges.useMutation({
     onSuccess: () => toast.success('Badge definitions seeded'),
   });
+
+  // Onboarding analytics
+  const { data: onboardingAnalytics, refetch: refetchOnboarding } = trpc.onboarding.getAnalytics.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === 'admin',
+  });
+  const resetOnboardingMutation = trpc.onboarding.adminReset.useMutation({
+    onSuccess: () => { toast.success('Onboarding reset for user'); refetchOnboarding(); },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+  const [resetUserId, setResetUserId] = useState('');
 
   // Calculate counts
   const pendingReportsCount = reportCounts.find((c: any) => c.status === 'pending')?.count || 0;
@@ -200,6 +211,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
               Users ({allUsers.length})
+            </TabsTrigger>
+            <TabsTrigger value="onboarding" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Onboarding
             </TabsTrigger>
           </TabsList>
 
@@ -464,6 +479,135 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+          {/* Onboarding Analytics Tab */}
+          <TabsContent value="onboarding">
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="symbiote-card">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-[oklch(0.6_0.15_180)]">{onboardingAnalytics?.totalUsers ?? 0}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Total Users</div>
+                  </CardContent>
+                </Card>
+                <Card className="symbiote-card">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-green-400">{onboardingAnalytics?.completedUsers ?? 0}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Completed Onboarding</div>
+                  </CardContent>
+                </Card>
+                <Card className="symbiote-card">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-yellow-400">{onboardingAnalytics?.completionRate ?? 0}%</div>
+                    <div className="text-xs text-muted-foreground mt-1">Completion Rate</div>
+                  </CardContent>
+                </Card>
+                <Card className="symbiote-card">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-red-400">
+                      {onboardingAnalytics?.stepStats?.reduce((max: number, s: any) => Math.max(max, s.dropOffRate), 0) ?? 0}%
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">Max Step Drop-off</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Step Analytics */}
+              <Card className="symbiote-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BarChart2 className="h-4 w-4" /> Step Drop-off Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {(onboardingAnalytics?.stepStats ?? []).map((step: any) => (
+                      <div key={step.stepId} className="flex items-center gap-3">
+                        <div className="w-24 text-xs font-medium capitalize">{step.stepId}</div>
+                        <div className="flex-1">
+                          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[oklch(0.6_0.15_180)] rounded-full transition-all"
+                              style={{ width: `${step.views > 0 ? Math.round((step.completes / step.views) * 100) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground w-28 text-right">
+                          {step.views}v / {step.skips}s / {step.completes}c
+                        </div>
+                        {step.dropOffRate > 30 && (
+                          <Badge className="bg-red-500/20 text-red-400 text-xs">
+                            <TrendingDown className="h-3 w-3 mr-1" />{step.dropOffRate}% drop
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                    {!onboardingAnalytics?.stepStats?.length && (
+                      <p className="text-sm text-muted-foreground text-center py-4">No step data yet. Users need to go through onboarding first.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Admin Reset Tool */}
+              <Card className="symbiote-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <RotateCcw className="h-4 w-4" /> Reset User Onboarding
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">Reset onboarding for a specific user (by User ID) so they see the wizard again on next login.</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="User ID (e.g. 1)"
+                      value={resetUserId}
+                      onChange={(e) => setResetUserId(e.target.value)}
+                      className="max-w-xs"
+                      type="number"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const id = parseInt(resetUserId);
+                        if (!id) { toast.error('Enter a valid user ID'); return; }
+                        if (confirm(`Reset onboarding for user #${id}?`)) {
+                          resetOnboardingMutation.mutate({ userId: id });
+                          setResetUserId('');
+                        }
+                      }}
+                      disabled={resetOnboardingMutation.isPending}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset
+                    </Button>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-xs text-muted-foreground mb-2">Quick reset from user list:</p>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {allUsers.slice(0, 10).map((u: any) => (
+                        <div key={u.id} className="flex items-center justify-between p-2 rounded bg-secondary/30">
+                          <span className="text-xs">{u.name || `User #${u.id}`} <span className="text-muted-foreground">(#{u.id})</span></span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-xs"
+                            onClick={() => {
+                              if (confirm(`Reset onboarding for ${u.name || `User #${u.id}`}?`)) {
+                                resetOnboardingMutation.mutate({ userId: u.id });
+                              }
+                            }}
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" /> Reset
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

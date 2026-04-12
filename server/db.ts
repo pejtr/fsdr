@@ -17,7 +17,8 @@ import {
   transformationShowcase, TransformationShowcase,
   userProfiles, UserProfile,
   ctaTests, ctaVariants, socialProofEvents,
-  premiumSubscriptions, PremiumSubscription
+  premiumSubscriptions, PremiumSubscription,
+  onboardingEvents
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -2993,4 +2994,156 @@ export async function completeOnboarding(userId: number): Promise<boolean> {
     .set({ onboardingCompleted: true })
     .where(eq(users.id, userId));
   return true;
+}
+
+// ============ ONBOARDING ANALYTICS FUNCTIONS ============
+
+export async function resetOnboarding(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(users)
+    .set({ onboardingCompleted: false })
+    .where(eq(users.id, userId));
+  // Also clear their step events so analytics reset too
+  await db.delete(onboardingEvents)
+    .where(eq(onboardingEvents.userId, userId));
+  return true;
+}
+
+export async function trackOnboardingStep(
+  userId: number,
+  stepId: string,
+  action: 'view' | 'skip' | 'complete'
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(onboardingEvents).values({ userId, stepId, action });
+}
+
+export async function getOnboardingAnalytics(): Promise<{
+  totalUsers: number;
+  completedUsers: number;
+  completionRate: number;
+  stepStats: Array<{ stepId: string; views: number; skips: number; completes: number; dropOffRate: number }>;
+}> {
+  const db = await getDb();
+  if (!db) return { totalUsers: 0, completedUsers: 0, completionRate: 0, stepStats: [] };
+
+  const [totalRow] = await db.select({ count: sql<number>`COUNT(*)` }).from(users);
+  const [completedRow] = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(users)
+    .where(eq(users.onboardingCompleted, true));
+
+  const totalUsers = Number(totalRow?.count ?? 0);
+  const completedUsers = Number(completedRow?.count ?? 0);
+  const completionRate = totalUsers > 0 ? Math.round((completedUsers / totalUsers) * 100) : 0;
+
+  const STEP_IDS = ['welcome', 'browse', 'forum', 'gamification', 'affiliate', 'subscribe'];
+  const stepStats = await Promise.all(STEP_IDS.map(async (stepId) => {
+    const [viewRow] = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(onboardingEvents)
+      .where(and(eq(onboardingEvents.stepId, stepId), eq(onboardingEvents.action, 'view')));
+    const [skipRow] = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(onboardingEvents)
+      .where(and(eq(onboardingEvents.stepId, stepId), eq(onboardingEvents.action, 'skip')));
+    const [completeRow] = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(onboardingEvents)
+      .where(and(eq(onboardingEvents.stepId, stepId), eq(onboardingEvents.action, 'complete')));
+
+    const views = Number(viewRow?.count ?? 0);
+    const skips = Number(skipRow?.count ?? 0);
+    const completes = Number(completeRow?.count ?? 0);
+    const dropOffRate = views > 0 ? Math.round((skips / views) * 100) : 0;
+
+    return { stepId, views, skips, completes, dropOffRate };
+  }));
+
+  return { totalUsers, completedUsers, completionRate, stepStats };
+}
+
+export async function getPersonalizedRecommendations(userId: number): Promise<{
+  sections: Array<{ type: string; title: string; description: string; link: string; priority: number }>;
+}> {
+  const db = await getDb();
+  if (!db) return { sections: [] };
+
+  // Check user activity to personalize recommendations
+  const [forumCount] = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(forumTopics)
+    .where(eq(forumTopics.authorId, userId));
+
+  const [photoCount] = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(photos)
+    .where(eq(photos.userId, userId));
+
+  const [reputationRow] = await db.select({ points: sql<number>`COALESCE(SUM(points), 0)` })
+    .from(userReputation)
+    .where(eq(userReputation.userId, userId));
+
+  const [subRow] = await db.select({ id: premiumSubscriptions.id })
+    .from(premiumSubscriptions)
+    .where(and(
+      eq(premiumSubscriptions.userId, userId),
+      eq(premiumSubscriptions.status, 'active')
+    ))
+    .limit(1);
+
+  const hasForumActivity = Number(forumCount?.count ?? 0) > 0;
+  const hasPhotos = Number(photoCount?.count ?? 0) > 0;
+  const reputationPoints = Number(reputationRow?.points ?? 0);
+  const hasSubscription = !!subRow;
+
+  const sections: Array<{ type: string; title: string; description: string; link: string; priority: number }> = [];
+
+  if (!hasSubscription) {
+    sections.push({
+      type: 'subscription',
+      title: 'Odemkni prémiový obsah',
+      description: 'Získej přístup ke stovkám exkluzivních videí a fotografií s Komunita+ za $4.99/měsíc.',
+      link: '/#pricing',
+      priority: 10,
+    });
+  }
+
+  if (!hasForumActivity) {
+    sections.push({
+      type: 'forum',
+      title: 'Zapoj se do komunity',
+      description: 'Ještě jsi nezaložil/a žádné téma. Sdílej své zkušenosti a získej reputační body!',
+      link: '/forum',
+      priority: 8,
+    });
+  }
+
+  if (!hasPhotos) {
+    sections.push({
+      type: 'photos',
+      title: 'Sdílej své fotky',
+      description: 'Přidej svou první fotografii do galerie a získej +2 reputační body.',
+      link: '/gallery',
+      priority: 6,
+    });
+  }
+
+  if (reputationPoints < 50) {
+    sections.push({
+      type: 'gamification',
+      title: 'Stoupej v žebříčku',
+      description: `Máš ${reputationPoints} bodů. Přidej příspěvek nebo odpověz ve fóru a získej více bodů!`,
+      link: '/leaderboard',
+      priority: 5,
+    });
+  }
+
+  sections.push({
+    type: 'affiliate',
+    title: 'Vydělávej sdílením',
+    description: 'Sdílej svůj affiliate odkaz a získej provizi z každého nového člena + 10 reputačních bodů.',
+    link: '/affiliate',
+    priority: 4,
+  });
+
+  // Sort by priority descending, return top 3
+  sections.sort((a, b) => b.priority - a.priority);
+  return { sections: sections.slice(0, 3) };
 }
