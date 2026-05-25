@@ -3169,9 +3169,9 @@ Return ONLY the enhanced prompt text, no explanations.`;
       }),
 
     getLatestReport: adminProcedure.query(async () => {
-      const dbConn = await import('./db').then(m => m.getDb ? null : null);
       const { getDb } = await import('./db');
       const d = await getDb();
+      if (d == null) return null;
       const { weeklyRevenueReports } = await import('../drizzle/schema');
       const { desc } = await import('drizzle-orm');
       const reports = await d.select().from(weeklyRevenueReports)
@@ -3182,6 +3182,7 @@ Return ONLY the enhanced prompt text, no explanations.`;
     getReports: adminProcedure.query(async () => {
       const { getDb } = await import('./db');
       const d = await getDb();
+      if (d == null) return [];
       const { weeklyRevenueReports } = await import('../drizzle/schema');
       const { desc } = await import('drizzle-orm');
       return d.select().from(weeklyRevenueReports)

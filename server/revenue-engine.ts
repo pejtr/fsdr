@@ -413,7 +413,8 @@ Dej mi 3-5 konkrétních strategických doporučení co dělat příští týden
         },
       ],
     });
-    aiRecommendations = aiResponse?.choices?.[0]?.message?.content || "";
+    const rawContent = aiResponse?.choices?.[0]?.message?.content;
+    aiRecommendations = typeof rawContent === "string" ? rawContent : "";
   } catch (err) {
     console.error("[Revenue] AI recommendations failed:", err);
     aiRecommendations = "AI doporučení dočasně nedostupná.";

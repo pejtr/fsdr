@@ -151,7 +151,7 @@ export function UpsellPopup() {
     try {
       const { checkoutUrl } = await acceptMutation.mutateAsync({ offerId: offer.id });
       toast.success("Přesměrování na platbu...", { description: "Otevíráme Stripe checkout." });
-      window.open(checkoutUrl, "_blank");
+      if (checkoutUrl) window.open(checkoutUrl, "_blank");
       setDismissed(true);
     } catch {
       toast.error("Chyba", { description: "Nepodařilo se zpracovat nabídku." });
