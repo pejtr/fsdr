@@ -49,6 +49,33 @@ async function startServer() {
       createContext,
     })
   );
+  // Scheduled endpoints (Heartbeat cron callbacks)
+  app.post('/api/scheduled/weekly-revenue-report', async (req, res) => {
+    try {
+      const taskUid = req.headers['x-manus-cron-task-uid'] as string;
+      if (!taskUid) return res.status(403).json({ error: 'cron-only' });
+      const { generateWeeklyRevenueReport } = await import('../revenue-engine');
+      await generateWeeklyRevenueReport();
+      res.json({ ok: true, taskUid });
+    } catch (err: any) {
+      console.error('[Cron] weekly-revenue-report error:', err.message);
+      res.status(500).json({ error: err.message, timestamp: new Date().toISOString() });
+    }
+  });
+
+  app.post('/api/scheduled/daily-email-sequences', async (req, res) => {
+    try {
+      const taskUid = req.headers['x-manus-cron-task-uid'] as string;
+      if (!taskUid) return res.status(403).json({ error: 'cron-only' });
+      const { runDailyEmailSequences } = await import('../revenue-engine');
+      const result = await runDailyEmailSequences();
+      res.json({ ok: true, ...result, taskUid });
+    } catch (err: any) {
+      console.error('[Cron] daily-email-sequences error:', err.message);
+      res.status(500).json({ error: err.message, timestamp: new Date().toISOString() });
+    }
+  });
+
   // WebSocket setup for real-time forum chat
   setupWebSocket(server);
 

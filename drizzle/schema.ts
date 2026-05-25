@@ -1268,3 +1268,55 @@ export const userVideoProjects = mysqlTable("userVideoProjects", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type UserVideoProject = typeof userVideoProjects.$inferSelect;
+
+// ─── ROI 888%+ Revenue System ─────────────────────────────────────────────────
+export const upsellOffers = mysqlTable("upsell_offers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  fromTier: varchar("fromTier", { length: 50 }).notNull(),
+  toTier: varchar("toTier", { length: 50 }).notNull(),
+  discountPercent: int("discountPercent").default(50).notNull(),
+  discountCode: varchar("discountCode", { length: 100 }),
+  expiresAt: timestamp("expiresAt").notNull(),
+  status: mysqlEnum("status", ["pending", "accepted", "declined", "expired"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type UpsellOffer = typeof upsellOffers.$inferSelect;
+
+export const flashSales = mysqlTable("flash_sales", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  discountPercent: int("discountPercent").default(30).notNull(),
+  targetTier: varchar("targetTier", { length: 50 }).default("all").notNull(),
+  startsAt: timestamp("startsAt").notNull(),
+  endsAt: timestamp("endsAt").notNull(),
+  isActive: boolean("isActive").default(false).notNull(),
+  stripePromoCode: varchar("stripePromoCode", { length: 200 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FlashSale = typeof flashSales.$inferSelect;
+
+export const emailSequenceLog = mysqlTable("email_sequence_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sequenceType: mysqlEnum("sequenceType", ["welcome", "upsell_d3", "winback_d7", "abandoned_checkout", "renewal_reminder", "vip_onboarding"]).notNull(),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+  status: mysqlEnum("status", ["sent", "opened", "clicked", "converted"]).default("sent").notNull(),
+});
+export type EmailSequenceLog = typeof emailSequenceLog.$inferSelect;
+
+export const weeklyRevenueReports = mysqlTable("weekly_revenue_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  weekStart: timestamp("weekStart").notNull(),
+  weekEnd: timestamp("weekEnd").notNull(),
+  mrr: decimal("mrr", { precision: 10, scale: 2 }).default("0"),
+  newSubscribers: int("newSubscribers").default(0),
+  churnedSubscribers: int("churnedSubscribers").default(0),
+  conversionRate: decimal("conversionRate", { precision: 5, scale: 2 }).default("0"),
+  topAffiliateId: int("topAffiliateId"),
+  aiRecommendations: text("aiRecommendations"),
+  rawData: text("rawData"),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WeeklyRevenueReport = typeof weeklyRevenueReports.$inferSelect;

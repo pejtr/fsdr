@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { AffiliatePrizesWidget, EarningsCalculator } from "@/components/RevenueComponents";
 import { QRCodeSVG } from 'qrcode.react';
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -152,6 +153,12 @@ export default function AffiliateDashboard() {
             <Award className="h-4 w-4 mr-2" />
             Zkontrolovat odznaky
           </Button>
+        </div>
+
+        {/* Cash Prizes + Earnings Calculator */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <AffiliatePrizesWidget />
+          <EarningsCalculator />
         </div>
 
         {/* Stats Overview */}

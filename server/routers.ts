@@ -3134,6 +3134,71 @@ Return ONLY the enhanced prompt text, no explanations.`;
         return { enhancedPrompt: enhanced, originalPrompt: input.basePrompt };
       }),
   }),
+
+  // Revenue Engine (ROI 888%+)
+  revenue: router({
+    getUpsellOffer: protectedProcedure.query(async ({ ctx }) => {
+      const { getActiveUpsellOffer } = await import('./revenue-engine');
+      return getActiveUpsellOffer(ctx.user.id);
+    }),
+
+    acceptUpsellOffer: protectedProcedure
+      .input(z.object({ offerId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { acceptUpsellOffer } = await import('./revenue-engine');
+        const origin = (ctx.req.headers.origin as string) || process.env.VITE_APP_URL || 'https://femsider.manus.space';
+        const url = await acceptUpsellOffer(ctx.user.id, input.offerId, origin);
+        return { checkoutUrl: url };
+      }),
+
+    getFlashSale: publicProcedure.query(async () => {
+      const { getActiveFlashSale } = await import('./revenue-engine');
+      return getActiveFlashSale();
+    }),
+
+    createFlashSale: adminProcedure
+      .input(z.object({
+        name: z.string(),
+        discountPercent: z.number().min(5).max(80),
+        hoursFromNow: z.number().min(1).max(168),
+        stripePromoCode: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { createFlashSale } = await import('./revenue-engine');
+        return createFlashSale(input);
+      }),
+
+    getLatestReport: adminProcedure.query(async () => {
+      const dbConn = await import('./db').then(m => m.getDb ? null : null);
+      const { getDb } = await import('./db');
+      const d = await getDb();
+      const { weeklyRevenueReports } = await import('../drizzle/schema');
+      const { desc } = await import('drizzle-orm');
+      const reports = await d.select().from(weeklyRevenueReports)
+        .orderBy(desc(weeklyRevenueReports.createdAt)).limit(1);
+      return reports[0] || null;
+    }),
+
+    getReports: adminProcedure.query(async () => {
+      const { getDb } = await import('./db');
+      const d = await getDb();
+      const { weeklyRevenueReports } = await import('../drizzle/schema');
+      const { desc } = await import('drizzle-orm');
+      return d.select().from(weeklyRevenueReports)
+        .orderBy(desc(weeklyRevenueReports.createdAt)).limit(12);
+    }),
+
+    triggerWeeklyReport: adminProcedure.mutation(async () => {
+      const { generateWeeklyRevenueReport } = await import('./revenue-engine');
+      await generateWeeklyRevenueReport();
+      return { success: true };
+    }),
+
+    triggerDailySequences: adminProcedure.mutation(async () => {
+      const { runDailyEmailSequences } = await import('./revenue-engine');
+      return runDailyEmailSequences();
+    }),
+  }),
 });
 
 // Helper function to parse YouTube duration (PT1M30S -> 90)

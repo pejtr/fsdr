@@ -12,6 +12,7 @@ import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
 import { useCtaTest } from "@/hooks/useCtaTest";
 import { toast } from "sonner";
+import { EndOfMonthCountdown } from "@/components/RevenueComponents";
 
 const SOCIAL_PROOF_EVENTS = [
   { name: "Tomáš K.", city: "Praha", action: "se přihlásil k VIP Insider", time: "před 2 min" },
@@ -302,12 +303,13 @@ export default function Home() {
             </h2>
             <p className="text-muted-foreground mb-4 max-w-xl mx-auto">Získej přístup k exkluzivnímu obsahu a podpoř tvůrce, které miluješ.</p>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-10">
+          <div className="flex flex-col items-center gap-4 mb-10">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/30">
               <Flame className="h-4 w-4 text-orange-400 animate-pulse" />
               <span className="text-sm text-orange-400 font-semibold">Omezená nabídka: první měsíc se slevou 50% — pouze do konce měsíce</span>
               <Clock className="h-4 w-4 text-orange-400" />
             </div>
+            <EndOfMonthCountdown />
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">

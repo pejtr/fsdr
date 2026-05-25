@@ -498,3 +498,35 @@
 - [x] Sticky CTA bar při scrollování dolů (mobilní)
 - [x] Exit-intent popup s personalizací dle CTA varianty
 - [x] Floating social proof notification widget
+
+## ROI 888%+ Revenue Maximization System (COMPLETED)
+
+### Stripe Upsell & Order Bump
+- [x] Order Bump: přidat VIP upgrade nabídku na success stránce po Komunita+ platbě
+- [x] One-click upsell: po checkout.session.completed nabídnout upgrade na VIP za 50% slevu
+- [x] Roční billing upsell: "Ušetři 20% — přejdi na roční plán" banner v dashboardu
+
+### Countdown Urgency & FOMO Engine
+- [x] Countdown timer komponenta (reálný odpočet do konce měsíce) v pricing sekci
+- [x] Scarcity badge: "Zbývá jen X míst" dynamicky na pricing kartách
+- [x] Flash sale popup: 48h akce s odpočtem (spouštěno ručně adminem)
+- [x] Session-based urgency: "Tato nabídka platí jen 15 minut" pro exit-intent popup
+
+### Email Automation Sekvence
+- [x] Upsell email: 3 dny po registraci — "Přejdi na VIP, ušetři 30%"
+- [x] Win-back email: 7 dní neaktivity — "Chybíš nám, tady je 20% sleva"
+- [x] Abandoned checkout email: 1h po opuštění checkout bez platby
+- [x] VIP renewal reminder: 3 dny před expirací předplatného
+
+### Weekly AI Revenue Report (Heartbeat Cron)
+- [x] Endpoint /api/scheduled/weekly-revenue-report
+- [x] AI analýza: MRR, churn rate, top tvůrci, konverzní poměr
+- [x] Strategická doporučení od AI (co dělat příští týden)
+- [x] Email report vlastníkovi každé pondělí 8:00 UTC
+- [x] Heartbeat cron: "0 0 8 * * 1" (každé pondělí)
+
+### Affiliate Acceleration
+- [x] Leaderboard cash prizes: top 3 affiliates dostávají bonus (zobrazení v dashboardu)
+- [x] Instant payout preview: real-time kalkulátor výdělků při sdílení
+- [x] Viral referral loop: "Pozvi 3 přátele → dostaneš 1 měsíc zdarma"
+- [x] Affiliate email sekvence: onboarding + tips pro nové affiliate partnery

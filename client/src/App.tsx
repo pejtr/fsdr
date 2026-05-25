@@ -31,6 +31,7 @@ import AccountRecovery from "./pages/AccountRecovery";
 import CreatorStudio from "./pages/CreatorStudio";
 import { SocialProofWidget } from "./components/SocialProofWidget";
 import { OnboardingWizard } from "./components/OnboardingWizard";
+import { FlashSaleBanner, UpsellPopup } from "./components/RevenueComponents";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -91,6 +92,8 @@ function App() {
           <Router />
           <SocialProofWidget />
           <OnboardingWizard />
+          <FlashSaleBanner />
+          <UpsellPopup />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
