@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { X, Zap, Crown, Clock, TrendingUp, Trophy, Gift } from "lucide-react";
 
 // ─── Countdown Timer ──────────────────────────────────────────────────────────
@@ -135,7 +135,6 @@ export function UpsellPopup() {
     staleTime: 60000,
   });
   const acceptMutation = trpc.revenue.acceptUpsellOffer.useMutation();
-  const { toast } = useToast();
   const [dismissed, setDismissed] = useState(false);
   const [shown, setShown] = useState(false);
 
@@ -151,13 +150,13 @@ export function UpsellPopup() {
     if (!offer) return;
     try {
       const { checkoutUrl } = await acceptMutation.mutateAsync({ offerId: offer.id });
-      toast({ title: "Přesměrování na platbu...", description: "Otevíráme Stripe checkout." });
+      toast.success("Přesměrování na platbu...", { description: "Otevíráme Stripe checkout." });
       window.open(checkoutUrl, "_blank");
       setDismissed(true);
     } catch {
-      toast({ title: "Chyba", description: "Nepodařilo se zpracovat nabídku.", variant: "destructive" });
+      toast.error("Chyba", { description: "Nepodařilo se zpracovat nabídku." });
     }
-  }, [offer, acceptMutation, toast]);
+  }, [offer, acceptMutation]);
 
   if (!offer || dismissed || !shown) return null;
 
