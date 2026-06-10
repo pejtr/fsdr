@@ -530,3 +530,154 @@
 - [x] Instant payout preview: real-time kalkulátor výdělků při sdílení
 - [x] Viral referral loop: "Pozvi 3 přátele → dostaneš 1 měsíc zdarma"
 - [x] Affiliate email sekvence: onboarding + tips pro nové affiliate partnery
+
+
+## Phase 2: ChannelEmpire + AI Content System Features (NEXT PHASE)
+
+### AI Channel Builder & Faceless Content
+- [ ] Multi-language video generation (20+ languages: Spanish, Portuguese, Hindi, Arabic, Indonesian, French, German, etc.)
+- [ ] Native AI voices per language (regional accents: Mexican Spanish vs Spain Spanish, Brazilian vs Portugal Portuguese)
+- [ ] AI script generator s niche-specific tones a retention frameworks
+- [ ] Niche-specific templates (30+ niches: True Crime, Finance, Horror, Motivation, Kids Stories, History, Mystery, Health)
+- [ ] AI Algorithm Whisperer: videos engineered for YouTube algorithm (hooks, retention triggers, watch-time optimization)
+- [ ] Channel Authority Strategy: AI plánuje prvních 30 videí jako connected SERIES pro topic authority
+- [ ] YouTube Shorts auto-generator: vytváří 30-60s Shorts z long-form obsahu
+- [ ] Auto-optimized titles, descriptions & tags (SEO-optimized natively per language, ne Google Translate)
+- [ ] Stock footage auto-matching: AI páruje premium visuals k scriptu automaticky
+- [ ] Music + Sound Effects library: royalty-free hudba auto-matched k nálada
+- [ ] Auto video editing pipeline: voiceover + visuals + music + transitions + captions → final MP4
+
+### Monetization Intelligence
+- [ ] Niche Profitability Scores: vidí kterou language + niche kombinaci se nejvíc vyplácí
+- [ ] Monetization Map per niche + language: které affiliates konvertují, které sponsory platí, které produkty se prodávají
+- [ ] Trending topic detector: denní trending topics v niche + language pro nekonečné nápady
+- [ ] Direct YouTube upload via API: publikuj přímo na YouTube nebo stáhni MP4
+- [ ] Channel Performance Dashboard: track každý kanál, jazyk, video — views, watch time, revenue v jednom místě
+
+### Creator Studio Enhancements
+- [ ] Video recreate studio: import videa → AI analýza → detekce scén → screenshot varianty → extend/remake
+- [ ] AI thumbnail generator: click-worthy thumbnails per niche (true crime moody, kids bright, finance professional)
+- [ ] Captions + Subtitles: auto-generated captions v každém jazyce (lepší accessibility = více views = více revenue)
+- [ ] 100% Faceless operation: žádná kamera, mikrofon, tvář, mluvení, anglické znalosti, editing skills potřebné
+
+### Competitor Features Integration (Phase 2)
+
+#### Fan CRM & Mass Messaging (Supercreator + CreatorHero)
+- [ ] Fan CRM tabulka (fan segments, tags, LTV, last activity)
+- [ ] Mass messaging systém (broadcast zprávy všem fanouškům)
+- [ ] Fan segmentace (VIP, inactive, new, high-spender)
+- [ ] CRM dashboard stránka pro tvůrce
+
+#### AI Chat Automation & Personas (ChatPersona + FlirtFlow)
+- [ ] AI persona konfigurace (jméno, osobnost, styl komunikace)
+- [ ] Auto-reply na zprávy fanoušků (AI generované odpovědi)
+- [ ] Smart reply suggestions v chat UI
+- [ ] Multilingual chat support
+
+#### Inactive Fan Re-engagement (FlirtFlow + CreatorHero)
+- [ ] Detekce neaktivních fanoušků (30+ dní bez aktivity)
+- [ ] Automatická re-engagement zpráva (winback flow)
+- [ ] Expiring subscription reminder notifikace
+- [ ] Win-back analytics (kolik fanoušků se vrátilo)
+
+#### Team Management (OnlyMonster)
+- [ ] Týmové role (Owner, Manager, Chatter, Analyst)
+- [ ] Přiřazení chatters k tvůrcům
+- [ ] Team performance analytics
+- [ ] Role-based access control pro creator dashboard
+
+#### Revenue & Traffic Analytics (Supercreator + OnlyMonster)
+- [ ] Revenue tracking dashboard (MRR, churn, LTV)
+- [ ] Traffic source analytics (odkud přicházejí fanoušci)
+- [ ] Pricing optimization suggestions (AI doporučení cen)
+- [ ] Conversion funnel analytics
+
+### Email Marketing & Automation (SendGrid)
+- [ ] SendGrid npm package install a konfigurace
+- [ ] SENDGRID_API_KEY secret v env
+- [ ] Email helper funkce (sendEmail wrapper)
+- [ ] Welcome email template (HTML) po registraci
+- [ ] Weekly digest email template s body/stats
+- [ ] Backend endpoint pro ruční odeslání weekly digest
+- [ ] Fallback na in-app notifikaci pokud SendGrid selže
+
+### Onboarding A/B Test (Step Ordering)
+- [ ] DB: onboardingVariant pole na users tabulce
+- [ ] Dvě varianty pořadí kroků (A: standard, B: Subscription jako 2. krok)
+- [ ] Backend: přiřazení varianty při prvním onboardingu
+- [ ] Frontend: OnboardingWizard načítá pořadí kroků z varianty
+- [ ] Tracking konverzí (kdo z variant B koupil předplatné)
+- [ ] Admin panel: výsledky A/B testu onboardingu
+
+### Stripe Setup Guide & Checkout Verification
+- [ ] Stránka /stripe-setup s průvodcem pro claim sandbox
+- [ ] Odkaz na claim URL v admin panelu
+- [ ] Vizuální checklist pro Stripe aktivaci (test → live)
+- [ ] Test checkout flow validace (ověřit že webhook funguje)
+
+## Phase 3: Advanced Monetization & Scale (FUTURE)
+
+### Affiliate Program Expansion
+- [ ] Multi-tier affiliate system (4-5 úrovní s kaskádovitými provizemi)
+- [ ] Affiliate marketplace: tvůrci si mohou koupit affiliate balíčky
+- [ ] Affiliate content templates: pre-made social posts, emails, landing pages
+- [ ] Affiliate performance dashboard: real-time tracking, payouts, leaderboard
+
+### Premium Content Tiers
+- [ ] Tier 1 (Free): limited access, ads
+- [ ] Tier 2 (Komunita+): $9.99/mo, full access, no ads, community features
+- [ ] Tier 3 (VIP Insider): $29.99/mo, exclusive content, priority support, affiliate program access
+- [ ] Tier 4 (Creator Pro): $99.99/mo, team management, advanced analytics, API access
+
+### Payment Methods Expansion
+- [ ] Cryptocurrency payments (Bitcoin, Ethereum, Solana)
+- [ ] Local payment methods (iDEAL, Bancontact, Przelewy24, etc.)
+- [ ] Installment payments (Klarna, Afterpay)
+- [ ] Bank transfer / wire payment
+
+### Analytics & Reporting
+- [ ] Advanced cohort analysis (retention, LTV by signup date)
+- [ ] Predictive churn modeling (AI predicts who will churn)
+- [ ] Revenue forecasting (AI predicts next month revenue)
+- [ ] Custom report builder (admins create custom reports)
+
+### Content Moderation at Scale
+- [ ] AI content moderation (auto-flag inappropriate content)
+- [ ] Community voting on flagged content (crowd-sourced moderation)
+- [ ] Appeal system (creators can appeal moderation decisions)
+- [ ] Moderation audit log (track all moderation actions)
+
+### Mobile App
+- [ ] React Native mobile app (iOS + Android)
+- [ ] Offline viewing (download videos for offline viewing)
+- [ ] Push notifications (native mobile notifications)
+- [ ] Mobile payment processing (Apple Pay, Google Pay)
+
+---
+
+## Development Notes
+
+**Current Status:** Production deployed at https://femsider.manus.space
+- 227 tests passing, 0 TypeScript errors
+- Stripe sandbox ready (needs claim at https://dashboard.stripe.com/claim_sandbox/...)
+- Heartbeat cron jobs configured (activate after deploy)
+- All premium design and ROI 888%+ features implemented
+
+**Next Steps (Claude Code):**
+1. Implement SendGrid email marketing (Phase 2)
+2. Add AI channel builder for multi-language video generation
+3. Integrate Supercreator/CreatorHero fan CRM features
+4. Build AI chat automation with personas
+5. Add team management (OnlyMonster features)
+6. Implement advanced analytics dashboard
+
+**Production Checklist Before Scale:**
+- [ ] Claim Stripe sandbox and test full payment flow
+- [ ] Configure SendGrid email sending
+- [ ] Set up monitoring/alerting (Sentry)
+- [ ] Enable database backups
+- [ ] Configure CDN for video delivery
+- [ ] Set up email deliverability monitoring
+- [ ] Load test platform at 1000 concurrent users
+- [ ] Security audit (OWASP top 10)
+- [ ] GDPR compliance review
