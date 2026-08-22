@@ -128,6 +128,9 @@ describe("OAuth and HMR regressions", () => {
 
   it("advertises the shared runtime port to Vite HMR", () => {
     const viteSource = readFileSync(resolve(process.cwd(), "server/_core/vite.ts"), "utf8");
+    expect(viteSource).toContain("VITE_HMR_ENABLED");
     expect(viteSource).toContain("clientPort: port");
+    expect(viteSource).toContain("page.replace");
+    expect(viteSource).toContain("@vite\\/client");
   });
 });

@@ -241,6 +241,11 @@ femsider/
 - Templates: welcome, upsell (day 3), win-back (day 7), abandoned checkout, VIP renewal
 - In-app notification is persisted independently of best-effort SendGrid delivery
 
+### Manus Preview HMR
+- The shared preview server disables Vite HMR by default because the preview proxy does not reliably support public WebSocket upgrades.
+- The forum realtime socket remains isolated on `/ws`.
+- Set `VITE_HMR_ENABLED=true` only for a local development proxy that supports WebSockets; Railway production serves the built app and does not use the Vite development server.
+
 ### Stripe Webhook Flow
 1. User completes checkout → Stripe fires `checkout.session.completed`
 2. Webhook handler in `server/stripe-webhook.ts` processes event
@@ -360,4 +365,4 @@ Proprietary — All rights reserved. FEMSIDER © 2026.
 
 ---
 
-**Last Updated:** August 22, 2026 | **Version:** 85840c51 + public/auth stability fix
+**Last Updated:** August 22, 2026 | **Version:** HMR preview compatibility fix

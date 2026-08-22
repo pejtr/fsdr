@@ -10544,7 +10544,7 @@
 
 ## Close
 
-- [x] Final local verification: 232 Vitest tests passed, TypeScript check passed, production build passed, and git diff --check passed (2026-08-22)
+- [x] Final local verification: 236 Vitest tests passed, TypeScript check passed, production build passed, and git diff --check passed (2026-08-22)
 - [ ] Railway production smoke test: anonymous homepage, login, logout, protected routes, Stripe checkout, and webhook
 
 ## 2026-08-22 UX, OAuth & HMR Fixes
@@ -10554,4 +10554,20 @@
 - [x] Add profile email-preferences section with weekly digest opt-out persisted through tRPC and database migration
 - [x] Add regression tests for OAuth/HMR and email-preference authorization (upsell guard retained)
 - [x] Verify desktop/mobile screenshots, typecheck, tests, and production build after the final tab-layout polish (236 tests, typecheck, build, diff check, desktop/mobile screenshots, HMR handshake)
-- [ ] Save a checkpoint with the completed UX/OAuth/HMR changes
+- [x] Save a checkpoint with the completed UX/OAuth/HMR changes
+
+## 2026-08-22 E-mail Topics, OAuth Welcome & Urgency UX
+- [ ] Rozšířit e-mailové preference o konkrétní témata odběru a bezpečné uložení nastavení
+- [ ] Zobrazit potvrzovací notifikaci po úspěšném uložení e-mailových preferencí
+- [ ] Přidat personalizovanou uvítací zprávu nebo onboarding tooltip po prvním OAuth přihlášení
+- [ ] Přidat do upsell widgetu časově omezený štítek a odpočet s bezpečným vypršením nabídky
+- [ ] Doplnit regresní testy pro témata e-mailů, uvítací onboarding a upsell urgency stav
+- [ ] Ověřit desktop/mobilní vzhled, typecheck, testy a produkční build
+- [ ] Uložit checkpoint s novými e-mailovými tématy, onboardingem a urgency UX
+
+## 2026-08-22 Persistent Vite HMR WebSocket Error
+- [x] Diagnose the recurring `WebSocket closed without opened` error on the public homepage
+- [x] Make Vite HMR behavior compatible with the Manus preview proxy without breaking `/ws` forum realtime (HMR opt-in; forum socket remains `/ws`)
+- [x] Add or update a regression guard for the chosen preview HMR strategy
+- [x] Verify homepage HTTP response, browser console, tests, typecheck, and production build
+- [ ] Save a checkpoint for the HMR fix

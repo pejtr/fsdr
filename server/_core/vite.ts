@@ -7,12 +7,14 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
 export async function setupVite(app: Express, server: Server, port: number) {
+  // The Manus preview proxy serves HTTP reliably but does not guarantee a
+  // public WebSocket upgrade. Keep HMR opt-in so the preview never emits a
+  // misleading client-side connection error; local developers can enable it
+  // with VITE_HMR_ENABLED=true when their proxy supports WebSockets.
+  const hmrEnabled = process.env.VITE_HMR_ENABLED === "true";
   const serverOptions = {
     middlewareMode: true,
-    // The browser reaches the app through the exposed Express port. Explicitly
-    // mirror that port for Vite's client-side HMR socket instead of letting
-    // Vite advertise its standalone default (5173).
-    hmr: { server, clientPort: port },
+    hmr: hmrEnabled ? { server, clientPort: port } : false,
     allowedHosts: true as const,
   };
 
@@ -41,7 +43,13 @@ export async function setupVite(app: Express, server: Server, port: number) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
-      const page = await vite.transformIndexHtml(url, template);
+      let page = await vite.transformIndexHtml(url, template);
+      if (!hmrEnabled) {
+        // Vite may still inject @vite/client in middleware mode even when the
+        // HMR server is disabled. Remove it so preview browsers do not attempt
+        // an unsupported WebSocket connection at all.
+        page = page.replace(/\s*<script type="module" src="\/@vite\/client"><\/script>\s*/g, "\n");
+      }
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
