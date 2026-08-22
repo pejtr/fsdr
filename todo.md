@@ -10571,3 +10571,11 @@
 - [x] Add or update a regression guard for the chosen preview HMR strategy
 - [x] Verify homepage HTTP response, browser console, tests, typecheck, and production build
 - [x] Save a checkpoint for the HMR fix
+
+## 2026-08-22 OAuth Welcome, Email Confirmation & Upsell Urgency
+- [x] Ověřit nebo doplnit personalizovanou uvítací zprávu po úspěšném OAuth přihlášení pro nové uživatele (jméno v prvním kroku onboardingu)
+- [x] Ověřit nebo doplnit potvrzovací notifikaci po uložení e-mailových preferencí (toast + dostupný stav Uloženo)
+- [x] Ověřit nebo doplnit viditelný časově omezený štítek a bezpečný odpočet v upsell widgetu
+- [x] Přidat regresní testy pro všechny tři UX stavy (239 testů celkem)
+- [x] Ověřit desktop/mobilní vzhled, typecheck, testy a produkční build
+- [ ] Uložit checkpoint s dokončenými UX úpravami

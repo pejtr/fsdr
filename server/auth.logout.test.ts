@@ -134,3 +134,25 @@ describe("OAuth and HMR regressions", () => {
     expect(viteSource).toContain("@vite\\/client");
   });
 });
+
+describe("requested UX regressions", () => {
+  it("personalizes the first onboarding welcome step", () => {
+    const source = readFileSync(resolve(process.cwd(), "client/src/components/OnboardingWizard.tsx"), "utf8");
+    expect(source).toContain("Vítej, ${firstName}!");
+    expect(source).toContain("Ahoj ${firstName}");
+  });
+
+  it("confirms saved email preferences in an accessible status region", () => {
+    const source = readFileSync(resolve(process.cwd(), "client/src/pages/Settings.tsx"), "utf8");
+    expect(source).toContain("toast.success('E-mailové preference byly uloženy'");
+    expect(source).toContain('role="status"');
+    expect(source).toContain("emailPreferencesSaved");
+  });
+
+  it("keeps the upsell urgency label and expiry countdown visible", () => {
+    const source = readFileSync(resolve(process.cwd(), "client/src/components/RevenueComponents.tsx"), "utf8");
+    expect(source).toContain("Časově omezená nabídka");
+    expect(source).toContain("targetDate={expiresAt}");
+    expect(source).toContain("Nabídka vyprší za");
+  });
+});

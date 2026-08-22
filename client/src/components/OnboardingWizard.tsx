@@ -149,6 +149,7 @@ export function OnboardingWizard() {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
+  const firstName = user?.name?.trim().split(/\s+/)[0] || "příteli";
 
   const { data: onboardingStatus, isLoading } =
     trpc.onboarding.getStatus.useQuery(undefined, {
@@ -226,6 +227,11 @@ export function OnboardingWizard() {
   }
 
   const step = orderedSteps[currentStep];
+  const isWelcomeStep = step.id === "welcome";
+  const stepTitle = isWelcomeStep && user?.name ? `Vítej, ${firstName}!` : step.title;
+  const stepDescription = isWelcomeStep && user?.name
+    ? `Ahoj ${firstName}, jsme rádi, že jsi tady. Během chvíle ti ukážeme hlavní funkce platformy, abys mohl/a naplno využít vše, co FEMSIDER nabízí.`
+    : step.description;
   const progress = ((currentStep + 1) / orderedSteps.length) * 100;
   const isLastStep = currentStep === orderedSteps.length - 1;
 
@@ -291,12 +297,12 @@ export function OnboardingWizard() {
                 {step.subtitle}
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-foreground">{step.title}</h2>
+            <h2 className="text-2xl font-bold text-foreground">{stepTitle}</h2>
           </div>
 
           {/* Description */}
           <p className="relative text-center text-muted-foreground mb-6 leading-relaxed">
-            {step.description}
+            {stepDescription}
           </p>
 
           {/* Features */}

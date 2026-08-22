@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, DollarSign, Shield, Save, Mail, BellRing, Megaphone, Video, Lightbulb, Tag } from "lucide-react";
+import { User, DollarSign, Shield, Save, Mail, BellRing, Megaphone, Video, Lightbulb, Tag, CheckCircle2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ export default function Settings() {
   const [creatorUpdatesEnabled, setCreatorUpdatesEnabled] = useState(true);
   const [productTipsEnabled, setProductTipsEnabled] = useState(true);
   const [specialOffersEnabled, setSpecialOffersEnabled] = useState(true);
+  const [emailPreferencesSaved, setEmailPreferencesSaved] = useState(false);
 
   const { data: emailPreferences, isLoading: emailPreferencesLoading } = trpc.user.getEmailPreferences.useQuery(
     undefined,
@@ -40,9 +41,11 @@ export default function Settings() {
       setCreatorUpdatesEnabled(preferences.creatorUpdatesEnabled);
       setProductTipsEnabled(preferences.productTipsEnabled);
       setSpecialOffersEnabled(preferences.specialOffersEnabled);
-      toast.success('E-mailové preference byly uloženy');
+      setEmailPreferencesSaved(true);
+      toast.success('E-mailové preference byly uloženy', { description: 'Tvé odběry byly aktualizovány.' });
     },
     onError: (error) => {
+      setEmailPreferencesSaved(false);
       toast.error('Preference se nepodařilo uložit', { description: error.message });
     },
   });
@@ -83,7 +86,10 @@ export default function Settings() {
     });
   };
 
+  const markEmailPreferencesDirty = () => setEmailPreferencesSaved(false);
+
   const handleEmailPreferencesSave = () => {
+    setEmailPreferencesSaved(false);
     updateEmailPreferencesMutation.mutate({
       weeklyDigestEnabled,
       promotionalEmailsEnabled,
@@ -228,7 +234,7 @@ export default function Settings() {
                     </div>
                     <Switch
                       checked={weeklyDigestEnabled}
-                      onCheckedChange={setWeeklyDigestEnabled}
+                      onCheckedChange={(checked) => { markEmailPreferencesDirty(); setWeeklyDigestEnabled(checked); }}
                       disabled={emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
                       aria-label="Povolit týdenní přehledy"
                     />
@@ -244,7 +250,7 @@ export default function Settings() {
                     </div>
                     <Switch
                       checked={promotionalEmailsEnabled}
-                      onCheckedChange={setPromotionalEmailsEnabled}
+                      onCheckedChange={(checked) => { markEmailPreferencesDirty(); setPromotionalEmailsEnabled(checked); }}
                       disabled={emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
                       aria-label="Povolit marketingové e-maily"
                     />
@@ -262,7 +268,7 @@ export default function Settings() {
                         <p className="mb-3 text-xs text-muted-foreground">Premiéry a nové přírůstky tvůrců.</p>
                         <Switch
                           checked={creatorUpdatesEnabled}
-                          onCheckedChange={setCreatorUpdatesEnabled}
+                          onCheckedChange={(checked) => { markEmailPreferencesDirty(); setCreatorUpdatesEnabled(checked); }}
                           disabled={!promotionalEmailsEnabled || emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
                           aria-label="Povolit nová videa"
                         />
@@ -273,7 +279,7 @@ export default function Settings() {
                         <p className="mb-3 text-xs text-muted-foreground">AI nástroje, inspirace a strategie.</p>
                         <Switch
                           checked={productTipsEnabled}
-                          onCheckedChange={setProductTipsEnabled}
+                          onCheckedChange={(checked) => { markEmailPreferencesDirty(); setProductTipsEnabled(checked); }}
                           disabled={!promotionalEmailsEnabled || emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
                           aria-label="Povolit tipy pro tvůrce"
                         />
@@ -284,7 +290,7 @@ export default function Settings() {
                         <p className="mb-3 text-xs text-muted-foreground">Časově omezené nabídky a výhody.</p>
                         <Switch
                           checked={specialOffersEnabled}
-                          onCheckedChange={setSpecialOffersEnabled}
+                          onCheckedChange={(checked) => { markEmailPreferencesDirty(); setSpecialOffersEnabled(checked); }}
                           disabled={!promotionalEmailsEnabled || emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
                           aria-label="Povolit VIP nabídky"
                         />
@@ -293,7 +299,14 @@ export default function Settings() {
                   </div>
 
                   <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground">Změnu můžeš kdykoliv upravit. Provozní e-maily účtu jsou oddělené.</p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs text-muted-foreground">Změnu můžeš kdykoliv upravit. Provozní e-maily účtu jsou oddělené.</p>
+                      {emailPreferencesSaved && (
+                        <p className="flex items-center gap-1 text-xs font-medium text-emerald-400" role="status" aria-live="polite">
+                          <CheckCircle2 className="h-4 w-4" /> Uloženo
+                        </p>
+                      )}
+                    </div>
                     <Button
                       onClick={handleEmailPreferencesSave}
                       disabled={emailPreferencesLoading || updateEmailPreferencesMutation.isPending}

@@ -186,11 +186,11 @@ export function UpsellPopup() {
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 bg-purple-500/20 border border-purple-500/30 rounded-full px-4 py-1.5 mb-4">
             <Zap className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-purple-300 text-xs font-bold uppercase tracking-wider">Exkluzivní nabídka</span>
+            <span className="text-purple-300 text-xs font-bold uppercase tracking-wider">Časově omezená nabídka</span>
           </div>
           <Crown className="relative w-12 h-12 text-yellow-400 mx-auto mb-3 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
           <h2 className="text-2xl font-black text-white mb-2">Upgrade na VIP Insider</h2>
-          <p className="text-gray-400 text-sm">Speciální nabídka jen pro tebe — platí 48 hodin</p>
+          <p className="flex items-center justify-center gap-1.5 text-gray-400 text-sm"><Clock className="h-4 w-4 text-yellow-400" />Speciální nabídka jen pro tebe — platí do vypršení odpočtu</p>
         </div>
 
         {/* Price comparison */}
