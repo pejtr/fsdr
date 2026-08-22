@@ -90,8 +90,11 @@ export const appRouter = router({
       .input(z.object({
         weeklyDigestEnabled: z.boolean().optional(),
         promotionalEmailsEnabled: z.boolean().optional(),
+        creatorUpdatesEnabled: z.boolean().optional(),
+        productTipsEnabled: z.boolean().optional(),
+        specialOffersEnabled: z.boolean().optional(),
       }).refine(
-        (input) => input.weeklyDigestEnabled !== undefined || input.promotionalEmailsEnabled !== undefined,
+        (input) => Object.values(input).some((value) => value !== undefined),
         { message: "Vyberte alespoň jednu e-mailovou preferenci" },
       ))
       .mutation(async ({ ctx, input }) => {
@@ -99,6 +102,9 @@ export const appRouter = router({
         const preferences = {
           weeklyDigestEnabled: input.weeklyDigestEnabled ?? current.weeklyDigestEnabled,
           promotionalEmailsEnabled: input.promotionalEmailsEnabled ?? current.promotionalEmailsEnabled,
+          creatorUpdatesEnabled: input.creatorUpdatesEnabled ?? current.creatorUpdatesEnabled,
+          productTipsEnabled: input.productTipsEnabled ?? current.productTipsEnabled,
+          specialOffersEnabled: input.specialOffersEnabled ?? current.specialOffersEnabled,
         };
         await db.updateEmailPreferences(ctx.user.id, preferences);
         return preferences;

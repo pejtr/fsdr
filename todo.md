@@ -10567,7 +10567,7 @@
 
 ## 2026-08-22 Persistent Vite HMR WebSocket Error
 - [x] Diagnose the recurring `WebSocket closed without opened` error on the public homepage
-- [x] Make Vite HMR behavior compatible with the Manus preview proxy without breaking `/ws` forum realtime (HMR opt-in; forum socket remains `/ws`)
+- [x] Make Vite HMR behavior compatible with the Manus preview proxy without breaking `/ws` forum realtime (HMR opt-in; forum socket remains `/ws`; preview strips the injected Vite client)
 - [x] Add or update a regression guard for the chosen preview HMR strategy
 - [x] Verify homepage HTTP response, browser console, tests, typecheck, and production build
 - [ ] Save a checkpoint for the HMR fix

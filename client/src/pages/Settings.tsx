@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, DollarSign, Shield, Save, Mail, BellRing, Megaphone } from "lucide-react";
+import { User, DollarSign, Shield, Save, Mail, BellRing, Megaphone, Video, Lightbulb, Tag } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -24,6 +24,9 @@ export default function Settings() {
   const [subscriptionPrice, setSubscriptionPrice] = useState('9.99');
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(true);
   const [promotionalEmailsEnabled, setPromotionalEmailsEnabled] = useState(true);
+  const [creatorUpdatesEnabled, setCreatorUpdatesEnabled] = useState(true);
+  const [productTipsEnabled, setProductTipsEnabled] = useState(true);
+  const [specialOffersEnabled, setSpecialOffersEnabled] = useState(true);
 
   const { data: emailPreferences, isLoading: emailPreferencesLoading } = trpc.user.getEmailPreferences.useQuery(
     undefined,
@@ -34,6 +37,9 @@ export default function Settings() {
     onSuccess: (preferences) => {
       setWeeklyDigestEnabled(preferences.weeklyDigestEnabled);
       setPromotionalEmailsEnabled(preferences.promotionalEmailsEnabled);
+      setCreatorUpdatesEnabled(preferences.creatorUpdatesEnabled);
+      setProductTipsEnabled(preferences.productTipsEnabled);
+      setSpecialOffersEnabled(preferences.specialOffersEnabled);
       toast.success('E-mailové preference byly uloženy');
     },
     onError: (error) => {
@@ -63,6 +69,9 @@ export default function Settings() {
     if (!emailPreferences) return;
     setWeeklyDigestEnabled(emailPreferences.weeklyDigestEnabled);
     setPromotionalEmailsEnabled(emailPreferences.promotionalEmailsEnabled);
+    setCreatorUpdatesEnabled(emailPreferences.creatorUpdatesEnabled);
+    setProductTipsEnabled(emailPreferences.productTipsEnabled);
+    setSpecialOffersEnabled(emailPreferences.specialOffersEnabled);
   }, [emailPreferences]);
 
   const handleSave = () => {
@@ -78,6 +87,9 @@ export default function Settings() {
     updateEmailPreferencesMutation.mutate({
       weeklyDigestEnabled,
       promotionalEmailsEnabled,
+      creatorUpdatesEnabled,
+      productTipsEnabled,
+      specialOffersEnabled,
     });
   };
 
@@ -236,6 +248,48 @@ export default function Settings() {
                       disabled={emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
                       aria-label="Povolit marketingové e-maily"
                     />
+                  </div>
+
+                  <div className="border-t border-border pt-4">
+                    <div className="mb-3">
+                      <p className="font-medium">Témata, která tě zajímají</p>
+                      <p className="text-sm text-muted-foreground">Vyber si, o čem chceš dostávat novinky. Tematické odběry fungují jen při zapnuté marketingové komunikaci.</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className={`rounded-xl border border-border/60 bg-secondary/30 p-3 transition-colors hover:bg-secondary/50 ${!promotionalEmailsEnabled ? 'opacity-50' : ''}`}>
+                        <Video className="mb-2 h-4 w-4 text-primary" />
+                        <p className="text-sm font-medium">Nová videa</p>
+                        <p className="mb-3 text-xs text-muted-foreground">Premiéry a nové přírůstky tvůrců.</p>
+                        <Switch
+                          checked={creatorUpdatesEnabled}
+                          onCheckedChange={setCreatorUpdatesEnabled}
+                          disabled={!promotionalEmailsEnabled || emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
+                          aria-label="Povolit nová videa"
+                        />
+                      </div>
+                      <div className={`rounded-xl border border-border/60 bg-secondary/30 p-3 transition-colors hover:bg-secondary/50 ${!promotionalEmailsEnabled ? 'opacity-50' : ''}`}>
+                        <Lightbulb className="mb-2 h-4 w-4 text-yellow-400" />
+                        <p className="text-sm font-medium">Tipy pro tvůrce</p>
+                        <p className="mb-3 text-xs text-muted-foreground">AI nástroje, inspirace a strategie.</p>
+                        <Switch
+                          checked={productTipsEnabled}
+                          onCheckedChange={setProductTipsEnabled}
+                          disabled={!promotionalEmailsEnabled || emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
+                          aria-label="Povolit tipy pro tvůrce"
+                        />
+                      </div>
+                      <div className={`rounded-xl border border-border/60 bg-secondary/30 p-3 transition-colors hover:bg-secondary/50 ${!promotionalEmailsEnabled ? 'opacity-50' : ''}`}>
+                        <Tag className="mb-2 h-4 w-4 text-yellow-400" />
+                        <p className="text-sm font-medium">VIP nabídky</p>
+                        <p className="mb-3 text-xs text-muted-foreground">Časově omezené nabídky a výhody.</p>
+                        <Switch
+                          checked={specialOffersEnabled}
+                          onCheckedChange={setSpecialOffersEnabled}
+                          disabled={!promotionalEmailsEnabled || emailPreferencesLoading || updateEmailPreferencesMutation.isPending}
+                          aria-label="Povolit VIP nabídky"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between gap-4 border-t border-border pt-4">

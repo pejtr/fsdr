@@ -139,12 +139,15 @@ export async function getEmailPreferences(userId: number) {
   return {
     weeklyDigestEnabled: user?.weeklyDigestEnabled ?? true,
     promotionalEmailsEnabled: user?.promotionalEmailsEnabled ?? true,
+    creatorUpdatesEnabled: user?.creatorUpdatesEnabled ?? true,
+    productTipsEnabled: user?.productTipsEnabled ?? true,
+    specialOffersEnabled: user?.specialOffersEnabled ?? true,
   };
 }
 
 export async function updateEmailPreferences(
   userId: number,
-  preferences: Pick<InsertUser, "weeklyDigestEnabled" | "promotionalEmailsEnabled">,
+  preferences: Pick<InsertUser, "weeklyDigestEnabled" | "promotionalEmailsEnabled" | "creatorUpdatesEnabled" | "productTipsEnabled" | "specialOffersEnabled">,
 ) {
   const db = await getDb();
   if (!db) return;
