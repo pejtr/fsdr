@@ -10578,4 +10578,4 @@
 - [x] Ověřit nebo doplnit viditelný časově omezený štítek a bezpečný odpočet v upsell widgetu
 - [x] Přidat regresní testy pro všechny tři UX stavy (239 testů celkem)
 - [x] Ověřit desktop/mobilní vzhled, typecheck, testy a produkční build
-- [ ] Uložit checkpoint s dokončenými UX úpravami
+- [x] Uložit checkpoint s dokončenými UX úpravami
