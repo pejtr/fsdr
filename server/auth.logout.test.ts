@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
@@ -58,5 +60,42 @@ describe("auth.logout", () => {
       httpOnly: true,
       path: "/",
     });
+  });
+});
+
+
+describe("auth.me public access", () => {
+  it("returns null instead of requiring login for anonymous visitors", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    };
+
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.auth.me()).resolves.toBeNull();
+  });
+});
+
+// Public-route regression guard: anonymous auth is handled at the component
+// boundary, never by a global query-cache redirect in client/src/main.tsx.
+describe("anonymous public-route regression", () => {
+  it("does not globally redirect every unauthorized tRPC query", () => {
+    const mainSource = readFileSync(resolve(process.cwd(), "client/src/main.tsx"), "utf8");
+    expect(mainSource).not.toContain("redirectToLoginIfUnauthorized");
+    expect(mainSource).not.toContain("window.location.href = getLoginUrl()");
+  });
+});
+
+// The sitewide upsell widget is mounted on public pages, so its protected
+// query must stay disabled until the auth state is known to be authenticated.
+describe("public revenue widgets", () => {
+  it("guards the protected upsell query", () => {
+    const componentSource = readFileSync(
+      resolve(process.cwd(), "client/src/components/RevenueComponents.tsx"),
+      "utf8",
+    );
+    expect(componentSource).toContain("enabled: isAuthenticated");
   });
 });

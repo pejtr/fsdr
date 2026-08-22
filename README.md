@@ -1,6 +1,6 @@
 # FEMSIDER — Premium Adult Content Platform with AI Video Studio
 
-**Production:** https://femsider.manus.space | **Status:** Live with ROI 888%+ Revenue Engine
+**Production target:** Railway + https://femsider.com | **Reference preview:** https://femsider.manus.space | **Status:** Public-route and OAuth stability fix applied; Railway smoke test pending
 
 FEMSIDER is a high-converting adult content platform combining premium design, affiliate acceleration, and AI-powered content generation. Built with React 19, Express 4, tRPC 11, and Stripe integration.
 
@@ -125,8 +125,8 @@ FEMSIDER is a high-converting adult content platform combining premium design, a
 | **Video Gen** | MiniMax Hailuo-02 (Seedance 2.0), Vimeo API |
 | **Auth** | Manus OAuth (Google), JWT sessions |
 | **Monitoring** | Sentry (errors), Heartbeat (scheduled jobs) |
-| **Testing** | Vitest (227 tests, 0 failures) |
-| **Deployment** | Manus (managed hosting, auto-scaling) |
+| **Testing** | Vitest (230 tests, 0 failures) |
+| **Deployment** | Railway (production) + Manus preview (development only) |
 
 ---
 
@@ -162,7 +162,7 @@ FEMSIDER is a high-converting adult content platform combining premium design, a
 - MySQL/TiDB database
 - Stripe account (test mode)
 - Manus account (OAuth)
-
+- Railway account for production deployment
 ### Setup
 ```bash
 # Clone repository
@@ -172,7 +172,8 @@ gh repo clone femsider
 pnpm install
 
 # Setup environment variables
-# (Manus auto-injects: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, etc.)
+# Railway must define VITE_PUBLIC_APP_URL=https://femsider.com
+# Manus injects the remaining platform variables where applicable.
 
 # Push database schema
 pnpm db:push
@@ -293,11 +294,13 @@ femsider/
 - [ ] Set up email deliverability monitoring
 
 ### Deployment
-1. Click **Publish** in Manus UI
-2. Verify domain: https://femsider.manus.space
-3. Test payment flow with Stripe test card
-4. Monitor logs for errors
-5. Activate Heartbeat cron jobs (automatic after deploy)
+1. Connect the repository to Railway and configure the variables in `RAILWAY_DEPLOYMENT.md`.
+2. Set `VITE_PUBLIC_APP_URL=https://femsider.com`.
+3. Allow-list `https://femsider.com/api/oauth/callback` in the Manus OAuth application.
+4. Verify the anonymous homepage before testing payment flow with the Stripe test card.
+5. Monitor Railway logs and complete the production smoke test.
+
+Manus preview URLs rotate and are development-only; they must not be used as production OAuth redirect targets.
 
 ### Monitoring
 - **Errors:** Sentry dashboard
@@ -357,4 +360,4 @@ Proprietary — All rights reserved. FEMSIDER © 2026.
 
 ---
 
-**Last Updated:** May 27, 2026 | **Version:** 82101902 (ROI 888%+ Revenue Engine)
+**Last Updated:** August 22, 2026 | **Version:** 85840c51 + public/auth stability fix

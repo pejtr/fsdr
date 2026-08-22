@@ -3,6 +3,7 @@
  * CountdownTimer | UpsellPopup | FlashSaleBanner | AffiliatePrizes
  */
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +131,9 @@ export function FlashSaleBanner() {
 // ─── Upsell Popup ─────────────────────────────────────────────────────────────
 
 export function UpsellPopup() {
+  const { isAuthenticated } = useAuth();
   const { data: offer } = trpc.revenue.getUpsellOffer.useQuery(undefined, {
+    enabled: isAuthenticated,
     retry: false,
     staleTime: 60000,
   });

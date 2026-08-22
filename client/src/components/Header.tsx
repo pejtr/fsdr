@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 import { Link, useLocation } from "wouter";
 import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet, Youtube, Bell, MessageSquare, Video } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -326,11 +326,13 @@ export default function Header() {
                 <Link href="/account-recovery" className="text-xs text-muted-foreground hover:text-primary transition-colors hidden sm:block">
                   Nemohu se přihlásit
                 </Link>
-                <a href={getLoginUrl()}>
-                  <Button className="symbiote-gradient text-white border-0">
-                    Přihlásit se
-                  </Button>
-                </a>
+                <Button
+                  type="button"
+                  onClick={startLogin}
+                  className="symbiote-gradient text-white border-0"
+                >
+                  Přihlásit se
+                </Button>
               </div>
             )}
 

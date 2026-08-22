@@ -36,6 +36,8 @@ DATABASE_URL=mysql://user:pass@host:port/femsider
 VITE_APP_ID=<from Manus dashboard>
 OAUTH_SERVER_URL=https://api.manus.im
 VITE_OAUTH_PORTAL_URL=https://oauth.manus.im
+# Canonical public origin used for the OAuth callback
+VITE_PUBLIC_APP_URL=https://femsider.com
 JWT_SECRET=<generate random 32-char string>
 
 # Stripe (test mode)
@@ -89,11 +91,13 @@ Railway UI → Deploy
 ```
 
 ### Step 6: Update OAuth Redirect URIs
+Set `VITE_PUBLIC_APP_URL` to the canonical origin that is allow-listed in the Manus OAuth application. Do not use rotating Manus preview URLs as production redirect targets.
+
 In Manus OAuth dashboard:
 ```
 Redirect URIs:
-- https://femsider-prod.railway.app/api/oauth/callback
-- https://femsider.com/api/oauth/callback (custom domain)
+- https://femsider.com/api/oauth/callback
+- https://femsider-prod.railway.app/api/oauth/callback (temporary Railway fallback, if used)
 ```
 
 ---
@@ -194,13 +198,16 @@ Railway UI → Deployments → Logs
 **Solution:** Add MySQL plugin in Railway, copy auto-generated DATABASE_URL to variables
 
 ### Issue: "OAuth redirect_uri mismatch"
-**Solution:** Update redirect URIs in Manus dashboard to match Railway URL
+**Solution:** Set `VITE_PUBLIC_APP_URL=https://femsider.com` in Railway and allow-list `https://femsider.com/api/oauth/callback` in the Manus OAuth application. The code intentionally avoids rotating Manus preview domains.
 
 ### Issue: "Stripe webhook not working"
 **Solution:** 
 1. Verify webhook secret in environment variables
 2. Check Stripe dashboard for failed webhook attempts
 3. Ensure endpoint is publicly accessible (not localhost)
+
+### Issue: Public homepage unexpectedly redirects to login
+**Solution:** This must not happen. The public homepage and public content routes do not require authentication. Verify that `VITE_PUBLIC_APP_URL` is set only for the OAuth callback and that no protected widget is mounted without an auth guard. The sitewide upsell query is disabled for anonymous visitors.
 
 ### Issue: "Out of memory / OOM killed"
 **Solution:**

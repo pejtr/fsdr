@@ -1,6 +1,6 @@
 # 🤝 FEMSIDER Handoff to Claude Code
 
-**Project Status:** Phase 1 Complete (227 tests, 0 TS errors) | **Next Phase:** Phase 2 Implementation  
+**Project Status:** Phase 1 complete plus public/auth stability fix (230 tests, 0 TypeScript errors) | **Next Phase:** Phase 2 implementation
 **Deployment:** Railway (not Manus) | **Domain:** femsider.com (custom) + Railway subdomain
 
 ---
@@ -8,6 +8,7 @@
 ## 📦 What You're Receiving
 
 ### ✅ Completed (Phase 1)
+0. **Stability:** Public homepage is anonymous-accessible; globally forced login redirect removed; protected upsell query is auth-gated; login CTA uses a host-safe OAuth start flow.
 1. **Core Platform:** Full-stack React 19 + Express 4 + tRPC 11 + MySQL
 2. **Premium Design:** Playfair Display typography, gold accents, parallax hero, trust bar
 3. **Monetization:** Stripe subscriptions, ROI 888%+ revenue engine (upsell, countdown, email sequences)
@@ -194,6 +195,7 @@ DATABASE_URL=mysql://...
 VITE_APP_ID=...
 OAUTH_SERVER_URL=https://api.manus.im
 VITE_OAUTH_PORTAL_URL=https://oauth.manus.im
+VITE_PUBLIC_APP_URL=https://femsider.com
 JWT_SECRET=...
 
 # Stripe
@@ -280,6 +282,11 @@ VITE_APP_LOGO=https://cdn.femsider.com/logo.png
 **Workaround:** Not needed — app works fine, only live reload is affected  
 **Resolution:** Disappears after Railway deployment
 
+### Stability fix: public homepage and OAuth
+**Status:** Fixed in the working tree. Public routes no longer redirect to OAuth when an optional auth query returns anonymous/unauthorized. The sitewide upsell request is disabled until authentication is confirmed, and the header login button starts OAuth only on click.
+
+**Railway requirement:** Set `VITE_PUBLIC_APP_URL=https://femsider.com` and allow-list `https://femsider.com/api/oauth/callback`. Never allow-list a rotating Manus preview hostname.
+
 ### Issue: Memory pressure in sandbox
 **Status:** High activity during development  
 **Workaround:** Kill unused processes, reduce file loading  
@@ -350,7 +357,7 @@ Railway Dashboard → Metrics
 - [x] Environment variables documented
 - [x] Database schema finalized
 - [x] Stripe sandbox ready (needs claim)
-- [x] OAuth configured (needs redirect URI update)
+- [x] OAuth client flow hardened; Railway still needs canonical redirect URI configuration
 - [ ] Deploy to Railway (your task)
 - [ ] Claim Stripe sandbox (your task)
 - [ ] Configure SendGrid (Phase 2)
@@ -361,7 +368,7 @@ Railway Dashboard → Metrics
 ## 🎯 Success Criteria (Post-Deployment)
 
 - ✅ App accessible at femsider.com
-- ✅ OAuth login works
+- ✅ OAuth login flow is host-safe in the client; target-host smoke test remains pending until Railway configuration
 - ✅ Stripe checkout completes
 - ✅ Welcome email sent (once SendGrid configured)
 - ✅ Affiliate tracking works (UTM parameters)
@@ -373,9 +380,9 @@ Railway Dashboard → Metrics
 
 ---
 
-**Prepared by:** Manus AI Agent  
-**Date:** May 27, 2026  
-**Status:** Ready for Claude Code  
-**Next Steps:** Deploy to Railway, claim Stripe, implement Phase 2  
+**Prepared by:** Manus AI Agent
+**Date:** August 22, 2026
+**Status:** Ready for Claude Code; public/auth stability fix applied, Railway smoke test pending
+**Next Steps:** Deploy to Railway, claim Stripe, implement Phase 2
 
 Good luck! 🚀
