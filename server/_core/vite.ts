@@ -6,10 +6,13 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
-export async function setupVite(app: Express, server: Server) {
+export async function setupVite(app: Express, server: Server, port: number) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: { server },
+    // The browser reaches the app through the exposed Express port. Explicitly
+    // mirror that port for Vite's client-side HMR socket instead of letting
+    // Vite advertise its standalone default (5173).
+    hmr: { server, clientPort: port },
     allowedHosts: true as const,
   };
 

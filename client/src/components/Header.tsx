@@ -10,19 +10,66 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { startLogin } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet, Youtube, Bell, MessageSquare, Video } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Heart, Shield, Users, Wallet, Youtube, Bell, MessageSquare, Video, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
+import { toast } from "sonner";
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, error: authError, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [loginPending, setLoginPending] = useState(false);
+
+  useEffect(() => {
+    if (!authError || isAuthenticated) return;
+    toast.error("Nepodařilo se načíst přihlášení", {
+      description: "Zkontrolujte připojení a zkuste to znovu. Veřejný obsah zůstává dostupný.",
+    });
+  }, [authError, isAuthenticated]);
+
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("authError");
+    if (!status) return;
+    if (status === "cancelled") {
+      toast.info("Přihlášení bylo zrušeno", {
+        description: "Můžete pokračovat v prohlížení veřejného obsahu a přihlásit se později.",
+      });
+    } else {
+      toast.error("Přihlášení se nepodařilo dokončit", {
+        description: "Zkuste to prosím znovu. Pokud problém přetrvá, otevřete odkaz ‚Nemohu se přihlásit‘.",
+      });
+    }
+    window.history.replaceState({}, "", `${window.location.pathname}${window.location.hash}`);
+  }, []);
+
+  useEffect(() => {
+    if (!loginPending) return;
+    const timeout = window.setTimeout(() => {
+      setLoginPending(false);
+      toast.error("Přihlášení trvá příliš dlouho", {
+        description: "OAuth se neotevřel. Zkuste tlačítko znovu nebo vypněte blokování vyskakovacích oken.",
+      });
+    }, 12000);
+    return () => window.clearTimeout(timeout);
+  }, [loginPending]);
+
+  const handleLogin = () => {
+    setLoginPending(true);
+    try {
+      startLogin();
+    } catch {
+      setLoginPending(false);
+      toast.error("Přihlášení se nepodařilo spustit", {
+        description: "Zkuste to prosím znovu za chvíli.",
+      });
+    }
+  };
 
   // Fetch unread notification count
   const { data: unreadCount = 0, refetch: refetchUnread } = trpc.notifications.getUnreadCount.useQuery(
@@ -322,17 +369,25 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="relative flex items-center gap-2">
                 <Link href="/account-recovery" className="text-xs text-muted-foreground hover:text-primary transition-colors hidden sm:block">
                   Nemohu se přihlásit
                 </Link>
                 <Button
                   type="button"
-                  onClick={startLogin}
-                  className="symbiote-gradient text-white border-0"
+                  onClick={handleLogin}
+                  disabled={loginPending || authLoading}
+                  aria-busy={loginPending || authLoading}
+                  className="symbiote-gradient text-white border-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 active:translate-y-0"
                 >
-                  Přihlásit se
+                  {loginPending || authLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {loginPending ? "Přihlašování…" : authLoading ? "Načítám…" : "Přihlásit se"}
                 </Button>
+                {authError && !authLoading && (
+                  <p role="alert" className="absolute right-0 top-full mt-2 hidden max-w-[260px] rounded-lg border border-destructive/30 bg-background/95 p-2 text-right text-xs text-destructive shadow-lg sm:block">
+                    Přihlášení se nepodařilo načíst. Zkuste tlačítko znovu.
+                  </p>
+                )}
               </div>
             )}
 

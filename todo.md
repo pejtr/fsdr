@@ -10546,3 +10546,12 @@
 
 - [x] Final local verification: 232 Vitest tests passed, TypeScript check passed, production build passed, and git diff --check passed (2026-08-22)
 - [ ] Railway production smoke test: anonymous homepage, login, logout, protected routes, Stripe checkout, and webhook
+
+## 2026-08-22 UX, OAuth & HMR Fixes
+- [x] Diagnose and fix Vite WebSocket/HMR failure on the Manus preview host without hardcoding the production port (shared port binding + explicit /ws upgrade routing)
+- [x] Add interactive hover/focus states and a clearer CTA to the upsell widget
+- [x] Add smooth OAuth sign-in loading state and user-friendly error feedback
+- [x] Add profile email-preferences section with weekly digest opt-out persisted through tRPC and database migration
+- [x] Add regression tests for OAuth/HMR and email-preference authorization (upsell guard retained)
+- [x] Verify desktop/mobile screenshots, typecheck, tests, and production build after the final tab-layout polish (236 tests, typecheck, build, diff check, desktop/mobile screenshots, HMR handshake)
+- [ ] Save a checkpoint with the completed UX/OAuth/HMR changes

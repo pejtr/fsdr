@@ -16,7 +16,16 @@ interface WSMessage {
 const clients: Map<string, WSClient> = new Map();
 
 export function setupWebSocket(server: Server) {
-  const wss = new WebSocketServer({ server, path: "/ws" });
+  // This server shares the HTTP listener with Vite HMR. Keep upgrade routing
+  // explicit so /ws is handled here while Vite can handle its root-path socket.
+  const wss = new WebSocketServer({ noServer: true });
+  server.on("upgrade", (request, socket, head) => {
+    const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+    if (pathname !== "/ws") return;
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit("connection", ws, request);
+    });
+  });
 
   wss.on("connection", (ws: WebSocket) => {
     const clientId = Math.random().toString(36).substring(2, 15);

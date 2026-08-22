@@ -15,6 +15,8 @@ export const users = mysqlTable("users", {
   affiliateCode: varchar("affiliateCode", { length: 32 }).unique(),
   referredBy: int("referredBy"),
   onboardingCompleted: boolean("onboardingCompleted").default(false),
+  weeklyDigestEnabled: boolean("weeklyDigestEnabled").default(true).notNull(),
+  promotionalEmailsEnabled: boolean("promotionalEmailsEnabled").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

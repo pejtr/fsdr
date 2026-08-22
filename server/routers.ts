@@ -81,6 +81,28 @@ export const appRouter = router({
         await db.updateUserProfile(ctx.user.id, input);
         return { success: true };
       }),
+
+    getEmailPreferences: protectedProcedure.query(async ({ ctx }) => {
+      return db.getEmailPreferences(ctx.user.id);
+    }),
+
+    updateEmailPreferences: protectedProcedure
+      .input(z.object({
+        weeklyDigestEnabled: z.boolean().optional(),
+        promotionalEmailsEnabled: z.boolean().optional(),
+      }).refine(
+        (input) => input.weeklyDigestEnabled !== undefined || input.promotionalEmailsEnabled !== undefined,
+        { message: "Vyberte alespoň jednu e-mailovou preferenci" },
+      ))
+      .mutation(async ({ ctx, input }) => {
+        const current = await db.getEmailPreferences(ctx.user.id);
+        const preferences = {
+          weeklyDigestEnabled: input.weeklyDigestEnabled ?? current.weeklyDigestEnabled,
+          promotionalEmailsEnabled: input.promotionalEmailsEnabled ?? current.promotionalEmailsEnabled,
+        };
+        await db.updateEmailPreferences(ctx.user.id, preferences);
+        return preferences;
+      }),
     
     becomeCreator: protectedProcedure.mutation(async ({ ctx }) => {
       if (!ctx.user.isAgeVerified) {
@@ -2615,9 +2637,14 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
       const leaderboard = await db.getReputationLeaderboard(200);
       let sent = 0;
       let emailsSent = 0;
+      let skipped = 0;
       for (const entry of leaderboard) {
         const user = await db.getUserById(entry.userId);
         if (!user) continue;
+        if (!user.weeklyDigestEnabled) {
+          skipped++;
+          continue;
+        }
         const badges = await db.getUserBadgesWithDetails(entry.userId);
         const earnedBadges = badges.filter((b: any) => b.earned);
         const recentBadgeNames = earnedBadges.slice(-3).map((b: any) => b.name || b.badgeName || '');
@@ -2644,7 +2671,7 @@ Odpovídej v češtině, buď přátelský a profesionální. Poskytuj konkrétn
           if (ok) emailsSent++;
         }
       }
-      return { success: true, notificationsSent: sent, emailsSent };
+      return { success: true, notificationsSent: sent, emailsSent, skipped };
     }),
   }),
 

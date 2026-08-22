@@ -14,9 +14,13 @@ export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
+    const providerError = getQueryParam(req, "error");
 
-    if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
+    // Always return the visitor to the public app with a safe, non-sensitive
+    // status. Raw provider errors and callback details should not be exposed.
+    if (providerError || !code || !state) {
+      const reason = providerError === "access_denied" ? "cancelled" : "failed";
+      res.redirect(302, `/?authError=${reason}`);
       return;
     }
 
@@ -62,7 +66,7 @@ export function registerOAuthRoutes(app: Express) {
       res.redirect(302, "/");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      res.redirect(302, "/?authError=failed");
     }
   });
 }

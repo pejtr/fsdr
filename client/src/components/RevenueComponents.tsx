@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { X, Zap, Crown, Clock, TrendingUp, Trophy, Gift } from "lucide-react";
+import { X, Zap, Crown, Clock, TrendingUp, Trophy, Gift, Loader2, ArrowRight } from "lucide-react";
 
 // ─── Countdown Timer ──────────────────────────────────────────────────────────
 
@@ -170,11 +170,14 @@ export function UpsellPopup() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="relative max-w-md w-full bg-gradient-to-b from-[#1a0a2e] to-[#0d0d1a] border border-purple-500/30 rounded-2xl p-6 shadow-2xl shadow-purple-500/20">
+      <div className="group relative max-w-md w-full overflow-hidden bg-gradient-to-b from-[#1a0a2e] to-[#0d0d1a] border border-purple-500/30 rounded-2xl p-6 shadow-2xl shadow-purple-500/20 transition-all duration-300 hover:-translate-y-1 hover:border-purple-400/70 hover:shadow-purple-500/40">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-purple-500/20 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-40 w-40 rounded-full bg-fuchsia-500/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         {/* Close button */}
         <button
           onClick={() => setDismissed(true)}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
+          aria-label="Zavřít nabídku"
+          className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 transition-all duration-200 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 hover:rotate-90"
         >
           <X className="w-5 h-5" />
         </button>
@@ -185,13 +188,13 @@ export function UpsellPopup() {
             <Zap className="w-3.5 h-3.5 text-purple-400" />
             <span className="text-purple-300 text-xs font-bold uppercase tracking-wider">Exkluzivní nabídka</span>
           </div>
-          <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
+          <Crown className="relative w-12 h-12 text-yellow-400 mx-auto mb-3 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
           <h2 className="text-2xl font-black text-white mb-2">Upgrade na VIP Insider</h2>
           <p className="text-gray-400 text-sm">Speciální nabídka jen pro tebe — platí 48 hodin</p>
         </div>
 
         {/* Price comparison */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+        <div className="relative bg-white/5 border border-white/10 rounded-xl p-4 mb-4 transition-colors duration-200 hover:bg-white/[0.08] hover:border-white/20">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-400 text-sm">Normální cena</span>
             <span className="text-gray-500 line-through text-lg">${originalPrice}/měs</span>
@@ -210,8 +213,8 @@ export function UpsellPopup() {
         {/* Features */}
         <ul className="space-y-2 mb-5">
           {["4K video kvalita", "Vlastní požadavky na obsah", "Přímý kontakt s tvůrci", "Behind-the-scenes přístup", "AI Video Studio (neomezeno)", "Affiliate bonus 30%"].map(f => (
-            <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
-              <span className="text-green-400 text-base">✓</span> {f}
+            <li key={f} className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-gray-300 transition-colors duration-200 hover:bg-white/5 hover:text-white">
+              <span className="text-green-400 text-base transition-transform duration-200 group-hover:scale-110">✓</span> {f}
             </li>
           ))}
         </ul>
@@ -225,11 +228,15 @@ export function UpsellPopup() {
         <Button
           onClick={handleAccept}
           disabled={acceptMutation.isPending}
-          className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-bold py-3 text-base rounded-xl shadow-lg shadow-purple-500/30"
+          aria-busy={acceptMutation.isPending}
+          className="group/cta relative w-full overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-600 to-violet-600 hover:from-purple-500 hover:via-fuchsia-500 hover:to-violet-500 focus-visible:ring-2 focus-visible:ring-purple-200 text-white font-black py-3 text-base rounded-xl shadow-lg shadow-purple-500/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-purple-500/50 active:translate-y-0"
         >
-          {acceptMutation.isPending ? "Zpracovávám..." : `Upgradovat za $${discountedPrice}/měsíc →`}
+          <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/15 transition-transform duration-500 group-hover/cta:translate-x-full" />
+          <span className="relative flex items-center justify-center gap-2">
+            {acceptMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Zpracovávám…</> : <>Odemknout VIP za ${discountedPrice}/měsíc <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-1" /></>}
+          </span>
         </Button>
-        <p className="text-center text-xs text-gray-500 mt-3">Zrušení kdykoliv. Bez závazků.</p>
+        <p className="text-center text-xs text-gray-500 mt-3 transition-colors duration-200 group-hover:text-gray-300">Zrušení kdykoliv. Bez závazků.</p>
       </div>
     </div>
   );

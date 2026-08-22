@@ -134,6 +134,23 @@ export async function updateUserProfile(userId: number, data: Partial<InsertUser
   await db.update(users).set({ ...data, updatedAt: new Date() }).where(eq(users.id, userId));
 }
 
+export async function getEmailPreferences(userId: number) {
+  const user = await getUserById(userId);
+  return {
+    weeklyDigestEnabled: user?.weeklyDigestEnabled ?? true,
+    promotionalEmailsEnabled: user?.promotionalEmailsEnabled ?? true,
+  };
+}
+
+export async function updateEmailPreferences(
+  userId: number,
+  preferences: Pick<InsertUser, "weeklyDigestEnabled" | "promotionalEmailsEnabled">,
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ ...preferences, updatedAt: new Date() }).where(eq(users.id, userId));
+}
+
 export async function getCreators(limit = 20, offset = 0) {
   const db = await getDb();
   if (!db) return [];

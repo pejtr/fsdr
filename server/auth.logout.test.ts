@@ -99,3 +99,35 @@ describe("public revenue widgets", () => {
     expect(componentSource).toContain("enabled: isAuthenticated");
   });
 });
+
+describe("email preference authorization", () => {
+  const anonymousContext: TrpcContext = {
+    user: null,
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: {} as TrpcContext["res"],
+  };
+
+  it("requires authentication to read preferences", async () => {
+    const caller = appRouter.createCaller(anonymousContext);
+    await expect(caller.user.getEmailPreferences()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("requires authentication to update preferences", async () => {
+    const caller = appRouter.createCaller(anonymousContext);
+    await expect(caller.user.updateEmailPreferences({ weeklyDigestEnabled: false })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+});
+
+describe("OAuth and HMR regressions", () => {
+  it("redirects OAuth failures to a safe public status URL", () => {
+    const oauthSource = readFileSync(resolve(process.cwd(), "server/_core/oauth.ts"), "utf8");
+    expect(oauthSource).toContain("/?authError=failed");
+    expect(oauthSource).toContain("/?authError=${reason}");
+    expect(oauthSource).not.toContain('res.status(500).json({ error: "OAuth callback failed" })');
+  });
+
+  it("advertises the shared runtime port to Vite HMR", () => {
+    const viteSource = readFileSync(resolve(process.cwd(), "server/_core/vite.ts"), "utf8");
+    expect(viteSource).toContain("clientPort: port");
+  });
+});
