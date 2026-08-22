@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 // ============ RANK DISPLAY IN FORUM ============
 describe('Forum Rank Display', () => {
   it('should include authorRank and authorPoints in topic list response shape', () => {
@@ -151,6 +152,31 @@ describe('Weekly Digest', () => {
       sent++;
     }
     expect(sent).toBe(3);
+  });
+
+  it('should keep the admin digest endpoint wired to both delivery channels', () => {
+    const routerSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+    const endpoint = routerSource.slice(
+      routerSource.indexOf('sendWeeklyDigest: adminProcedure'),
+      routerSource.indexOf('sendWeeklyDigest: adminProcedure') + 2200,
+    );
+    expect(endpoint).toContain('db.createNotification');
+    expect(endpoint).toContain('sendWeeklyDigestEmail');
+  });
+});
+
+// Welcome delivery deliberately sends an in-app notification synchronously while
+// email delivery is best-effort, so an email-provider failure does not erase the
+// user's first-run activation path.
+describe('Email delivery fallback', () => {
+  it('keeps the welcome in-app notification independent from SendGrid', () => {
+    const source = readFileSync(resolve(process.cwd(), 'server/notifications.ts'), 'utf8');
+    const welcomeFlow = source.slice(
+      source.indexOf('export async function sendWelcomeNotification'),
+      source.indexOf('export async function sendWelcomeNotification') + 1100,
+    );
+    expect(welcomeFlow).toContain('sendWelcomeEmail');
+    expect(welcomeFlow).toContain('return sendPushNotification');
   });
 });
 

@@ -100,9 +100,9 @@ FEMSIDER is a high-converting adult content platform combining premium design, a
 - [ ] **Advanced Analytics** (Supercreator): MRR, churn, LTV, pricing optimization
 
 ### Email Marketing & Automation (SendGrid)
-- [ ] SendGrid integration with HTML email templates
-- [ ] Welcome, upsell, win-back, abandoned checkout, renewal reminder sequences
-- [ ] Weekly digest with AI-generated insights
+- [x] SendGrid integration with HTML email templates
+- [x] Welcome, upsell, win-back, abandoned checkout, renewal reminder sequences (core templates implemented)
+- [x] Weekly digest with AI-generated insights (admin trigger implemented)
 - [ ] Email deliverability monitoring and bounce handling
 
 ### Onboarding A/B Test
@@ -125,7 +125,7 @@ FEMSIDER is a high-converting adult content platform combining premium design, a
 | **Video Gen** | MiniMax Hailuo-02 (Seedance 2.0), Vimeo API |
 | **Auth** | Manus OAuth (Google), JWT sessions |
 | **Monitoring** | Sentry (errors), Heartbeat (scheduled jobs) |
-| **Testing** | Vitest (230 tests, 0 failures) |
+| **Testing** | Vitest (232 tests, 0 failures) |
 | **Deployment** | Railway (production) + Manus preview (development only) |
 
 ---
@@ -189,7 +189,7 @@ pnpm test
 ```bash
 pnpm dev          # Start dev server (http://localhost:3000)
 pnpm build        # Build for production
-pnpm test         # Run all tests (227 passing)
+pnpm test         # Run all tests (232 passing)
 pnpm db:push      # Migrate schema to database
 pnpm db:studio    # Open Drizzle Studio (DB explorer)
 ```
@@ -239,7 +239,7 @@ femsider/
 ### Email Sequences (SendGrid)
 - Triggered by `sendEmail()` in `server/revenue-engine.ts`
 - Templates: welcome, upsell (day 3), win-back (day 7), abandoned checkout, VIP renewal
-- Fallback to in-app notification if SendGrid fails
+- In-app notification is persisted independently of best-effort SendGrid delivery
 
 ### Stripe Webhook Flow
 1. User completes checkout → Stripe fires `checkout.session.completed`

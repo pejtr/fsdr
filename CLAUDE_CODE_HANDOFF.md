@@ -1,6 +1,6 @@
 # 🤝 FEMSIDER Handoff to Claude Code
 
-**Project Status:** Phase 1 complete plus public/auth stability fix (230 tests, 0 TypeScript errors) | **Next Phase:** Phase 2 implementation
+**Project Status:** Phase 1 complete plus public/auth stability fix (232 tests, 0 TypeScript errors) | **Next Phase:** Phase 2 implementation
 **Deployment:** Railway (not Manus) | **Domain:** femsider.com (custom) + Railway subdomain
 
 ---
@@ -15,10 +15,12 @@
 4. **Community:** Forum, real-time chat, gamification (badges, leaderboard, reputation)
 5. **Creator Tools:** Video upload, YouTube integration, Video Recreate Studio, AI Prompt Studio
 6. **Affiliate Program:** 4-tier commission system, cash prizes leaderboard, viral referral loop
-7. **Testing:** 227 passing tests, 0 TypeScript errors
+7. **Testing:** 232 passing tests, 0 TypeScript errors
 
 ### 📋 Pending (Phase 2-5)
-- [ ] SendGrid email marketing (welcome, upsell, win-back sequences)
+- [ ] Configure `SENDGRID_API_KEY` and `SENDGRID_FROM_EMAIL` in Railway
+- [ ] Add deliverability monitoring and bounce handling
+- [ ] Build email marketing dashboard and sequence analytics
 - [ ] AI channel builder (multi-language video generation, 30+ niche templates)
 - [ ] Competitor features (Fan CRM, AI chat automation, team management)
 - [ ] Web game integration (WebGL, in-game currency, leaderboard)
@@ -115,9 +117,11 @@ femsider/
 5. **Commit:** `git add -A && git commit -m "feat: description"`
 
 ### Email Sequences (Phase 2)
-- **File:** `server/revenue-engine.ts` (already has skeleton)
-- **Integration:** SendGrid npm package
-- **Triggers:** User registration (welcome), Day 3 (upsell), Day 7 (win-back)
+- **Files:** `server/email.ts`, `server/email-internal.ts`, and `server/revenue-engine.ts`
+- **Integration:** `@sendgrid/mail` with graceful no-key logging fallback
+- **Implemented templates:** welcome, weekly digest, upsell (day 3), win-back (day 7), VIP onboarding
+- **Admin trigger:** `gamification.sendWeeklyDigest` persists an in-app notification and attempts email delivery for each active leaderboard user
+- **Remaining operations:** Configure SendGrid secrets on Railway and add deliverability/bounce telemetry
 - **Templates:** HTML email templates in `server/email-templates/`
 
 ### Stripe Webhook Flow

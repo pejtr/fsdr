@@ -388,13 +388,13 @@
 ## Email Marketing, Onboarding A/B Test & Stripe Guide
 
 ### SendGrid Email Integration
-- [ ] SendGrid npm package install a konfigurace
-- [ ] SENDGRID_API_KEY secret v env
-- [ ] Email helper funkce (sendEmail wrapper)
-- [ ] Welcome email template (HTML) po registraci
-- [ ] Weekly digest email template s body/stats
-- [ ] Backend endpoint pro ruční odeslání weekly digest
-- [ ] Fallback na in-app notifikaci pokud SendGrid selže
+- [x] SendGrid npm package install a konfigurace (@sendgrid/mail)
+- [ ] SENDGRID_API_KEY secret konfigurován v produkčním prostředí Railway
+- [x] Email helper funkce (sendEmail wrapper v server/email.ts)
+- [x] Welcome email template (HTML) po registraci (sendWelcomeEmail)
+- [x] Weekly digest email template s body/stats (sendWeeklyDigestEmail)
+- [x] Backend tRPC endpoint pro ruční odeslání weekly digest (adminProcedure `gamification.sendWeeklyDigest`)
+- [x] Fallback na konzolové logování a in-app notifikace pokud SendGrid API klíč chybí
 
 ### Onboarding A/B Test (Step Ordering)
 - [ ] DB: onboardingVariant pole na users tabulce
@@ -10544,5 +10544,5 @@
 
 ## Close
 
-- [x] Final local verification: 230 Vitest tests passed, TypeScript check passed, production build passed, and git diff --check passed (2026-08-22)
+- [x] Final local verification: 232 Vitest tests passed, TypeScript check passed, production build passed, and git diff --check passed (2026-08-22)
 - [ ] Railway production smoke test: anonymous homepage, login, logout, protected routes, Stripe checkout, and webhook
